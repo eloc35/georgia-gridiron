@@ -1,0 +1,1650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Georgia Gridiron Dynasty - Complete GHSA Edition (2026-2028)</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto+Condensed:wght@400;700&display=swap');
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+        body { background-color: #0a0e14; color: #fff; text-align: center; overflow: hidden; font-family: 'Roboto Condensed', sans-serif; }
+        #game-container { position: relative; width: 100vw; height: 100vh; max-width: 1000px; max-height: 700px; margin: 0 auto; background: #0d131a; box-shadow: 0 0 40px rgba(0,0,0,0.8); }
+        canvas { width: 100%; height: 100%; display: block; background: #1a472a; }
+        .ui-panel { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(10, 14, 20, 0.96); display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; z-index: 10; backdrop-filter: blur(8px); }
+        .hidden { display: none !important; }
+        h1 { font-family: 'Bebas Neue', sans-serif; color: #f1c40f; margin-bottom: 4px; font-size: 42px; text-shadow: 3px 3px 0px #000, 0 0 20px rgba(241,196,15,0.3); letter-spacing: 3px; }
+        h2 { font-family: 'Bebas Neue', sans-serif; color: #e67e22; margin-bottom: 16px; font-size: 24px; letter-spacing: 2px; }
+        h3 { font-family: 'Bebas Neue', sans-serif; color: #f1c40f; font-size: 20px; letter-spacing: 1px; margin-bottom: 8px; }
+        p { margin-bottom: 18px; font-size: 14px; color: #bdc3c7; max-width: 520px; line-height: 1.5; }
+        .btn { background: #27ae60; color: white; border: 2px solid #2ecc71; padding: 12px 28px; font-weight: 700; font-size: 16px; cursor: pointer; margin: 6px; border-radius: 6px; box-shadow: 0 5px 0 #1e8449, 0 8px 15px rgba(0,0,0,0.3); transition: all 0.1s; font-family: 'Bebas Neue', sans-serif; letter-spacing: 1px; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 7px 0 #1e8449, 0 10px 20px rgba(0,0,0,0.3); }
+        .btn:active { transform: translateY(3px); box-shadow: 0 2px 0 #1e8449, 0 3px 8px rgba(0,0,0,0.3); }
+        .btn-sec { background: #2980b9; border-color: #3498db; box-shadow: 0 5px 0 #1f618d, 0 8px 15px rgba(0,0,0,0.3); }
+        .btn-sec:active { box-shadow: 0 2px 0 #1f618d, 0 3px 8px rgba(0,0,0,0.3); }
+        .btn-danger { background: #c0392b; border-color: #e74c3c; box-shadow: 0 5px 0 #922b21, 0 8px 15px rgba(0,0,0,0.3); }
+        .btn-danger:active { box-shadow: 0 2px 0 #922b21, 0 3px 8px rgba(0,0,0,0.3); }
+        .btn-gold { background: #d4a017; border-color: #f1c40f; color: #000; box-shadow: 0 5px 0 #a67c00, 0 8px 15px rgba(0,0,0,0.3); }
+        .btn-gold:active { box-shadow: 0 2px 0 #a67c00, 0 3px 8px rgba(0,0,0,0.3); }
+        .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 12px 0; width: 100%; max-width: 480px; }
+        .stat-card { background: #1a2332; padding: 10px 14px; border-radius: 6px; border: 1px solid #2c3e50; text-align: left; transition: all 0.2s; }
+        .stat-card:hover { border-color: #f1c40f; transform: translateY(-2px); }
+        .stat-card div { font-size: 11px; color: #7f8c8d; text-transform: uppercase; letter-spacing: 1px; }
+        .stat-card span { font-size: 18px; font-weight: 700; color: #f39c12; font-family: 'Bebas Neue', sans-serif; letter-spacing: 1px; }
+        #hud { position: absolute; top: 0; left: 0; width: 100%; padding: 10px 18px; background: rgba(0,0,0,0.85); display: flex; justify-content: space-between; font-size: 14px; font-weight: 700; z-index: 5; color: #f1c40f; border-bottom: 2px solid #f1c40f; font-family: 'Bebas Neue', sans-serif; letter-spacing: 1px; }
+        .play-picker { display: flex; gap: 12px; margin-top: 15px; flex-wrap: wrap; justify-content: center; }
+        .play-btn { background: #2c3e50; border: 2px solid #34495e; color: white; padding: 14px 18px; border-radius: 8px; cursor: pointer; width: 130px; font-size: 13px; transition: all 0.2s; font-family: 'Roboto Condensed', sans-serif; }
+        .play-btn:hover { border-color: #f1c40f; transform: translateY(-3px); box-shadow: 0 5px 15px rgba(241,196,15,0.2); }
+        .play-btn:active { transform: translateY(0); }
+        .play-btn .play-name { font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 1px; color: #f1c40f; }
+        .play-btn .play-desc { font-size: 11px; color: #95a5a6; }
+        select { background: #1a2332; color: #f39c12; border: 2px solid #f1c40f; padding: 8px 12px; font-size: 14px; font-weight: 700; border-radius: 6px; font-family: 'Roboto Condensed', sans-serif; cursor: pointer; }
+        .badge { background: #e74c3c; color: white; padding: 3px 8px; font-size: 11px; border-radius: 4px; vertical-align: middle; font-weight: 700; letter-spacing: 1px; }
+        .badge-gold { background: #f1c40f; color: #000; }
+        .rec-item { background: #1a2332; padding: 10px 14px; margin: 5px 0; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 460px; border: 1px solid #2c3e50; transition: all 0.2s; }
+        .rec-item:hover { border-color: #f1c40f; }
+        .rec-item.signed { border-color: #27ae60; opacity: 0.7; }
+        .rating-bar { width: 100%; height: 6px; background: #2c3e50; border-radius: 3px; margin-top: 4px; overflow: hidden; }
+        .rating-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
+        .rating-fill.high { background: #27ae60; }
+        .rating-fill.mid { background: #f39c12; }
+        .rating-fill.low { background: #e74c3c; }
+        .schedule-item { background: #1a2332; border: 1px solid #2c3e50; border-radius: 6px; padding: 8px 12px; margin: 4px 0; display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 460px; font-size: 13px; }
+        .schedule-item.completed { opacity: 0.6; }
+        .schedule-item.current { border-color: #f1c40f; }
+        .schedule-result { font-weight: 700; }
+        .schedule-result.win { color: #2ecc71; }
+        .schedule-result.loss { color: #e74c3c; }
+        .confetti { position: absolute; width: 10px; height: 10px; animation: confetti-fall 3s linear forwards; }
+        @keyframes confetti-fall { 0% { transform: translateY(-100px) rotate(0deg); opacity: 1; } 100% { transform: translateY(600px) rotate(720deg); opacity: 0; } }
+        .field-goal-meter { width: 200px; height: 20px; background: #2c3e50; border-radius: 10px; margin: 10px auto; position: relative; overflow: hidden; }
+        .field-goal-target { position: absolute; height: 100%; background: #27ae60; border-radius: 10px; }
+        .field-goal-cursor { position: absolute; width: 4px; height: 100%; background: #f1c40f; border-radius: 2px; }
+        .toast { position: absolute; top: 60px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.9); color: #f1c40f; padding: 10px 20px; border-radius: 6px; font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 2px; z-index: 100; animation: toast-in 0.3s ease-out; border: 1px solid #f1c40f; }
+        @keyframes toast-in { from { opacity: 0; transform: translateX(-50%) translateY(-20px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+        .scroll-container { max-height: 280px; overflow-y: auto; width: 100%; padding-right: 8px; }
+        .scroll-container::-webkit-scrollbar { width: 6px; }
+        .scroll-container::-webkit-scrollbar-track { background: #1a2332; border-radius: 3px; }
+        .scroll-container::-webkit-scrollbar-thumb { background: #f1c40f; border-radius: 3px; }
+        .difficulty-select { display: flex; gap: 10px; margin: 10px 0; }
+        .diff-btn { background: #1a2332; border: 2px solid #2c3e50; color: #bdc3c7; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-family: 'Bebas Neue', sans-serif; letter-spacing: 1px; transition: all 0.2s; }
+        .diff-btn:hover, .diff-btn.active { border-color: #f1c40f; color: #f1c40f; background: #2c3e50; }
+        .season-progress { width: 100%; max-width: 460px; height: 8px; background: #1a2332; border-radius: 4px; margin: 8px 0; overflow: hidden; }
+        .season-progress-fill { height: 100%; background: #f1c40f; border-radius: 4px; transition: width 0.5s; }
+        .region-label { font-size: 10px; color: #7f8c8d; text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
+        .bracket-round { margin: 4px 0; }
+        .bracket-matchup { display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .bracket-team { font-family: 'Bebas Neue', sans-serif; font-size: 16px; }
+        @media (max-width: 600px) { h1 { font-size: 28px; } h2 { font-size: 18px; } .play-btn { width: 100px; padding: 10px; } .stats-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+<div id="game-container">
+    <div id="hud" class="hidden">
+        <span id="hud-score">GA 0 - 0 OPP</span>
+        <span id="hud-venue" style="color: #2ecc71;">FIELD</span>
+        <span id="hud-down">1st & 10</span>
+        <span id="hud-clock">Q1 03:00</span>
+    </div>
+    <div id="menu-panel" class="ui-panel">
+        <h1>GEORGIA GRIDIRON DYNASTY</h1>
+        <h2>Complete GHSA Edition (2026-2028)</h2>
+        <p>454 GHSA schools. 7 Classifications. 8 Regions each. The Corky Kell Classic at Mercedes-Benz Stadium. Battle through region play and the 32-team playoff bracket to claim the State Championship!</p>
+        <div class="difficulty-select">
+            <button class="diff-btn active" onclick="setDifficulty('normal')" id="diff-normal">NORMAL</button>
+            <button class="diff-btn" onclick="setDifficulty('hard')" id="diff-hard">HARD</button>
+            <button class="diff-btn" onclick="setDifficulty('extreme')" id="diff-extreme">EXTREME</button>
+        </div>
+        <button class="btn btn-gold" onclick="showTeamSelect()">START NEW DYNASTY</button>
+        <button class="btn btn-sec" onclick="showHowToPlay()">HOW TO PLAY</button>
+    </div>
+    <div id="howto-panel" class="ui-panel hidden">
+        <h2>HOW TO PLAY</h2>
+        <div style="max-width: 480px; text-align: left; font-size: 13px; line-height: 1.6; color: #bdc3c7;">
+            <p><strong style="color:#f1c40f">SEASON MODE:</strong> Play an 8-game regular season (Week 1 = Corky Kell at Mercedes-Benz). Win your region to qualify for playoffs.</p>
+            <p><strong style="color:#f1c40f">PLAYOFFS:</strong> 32-team bracket based on power rankings. Win 5 games to claim the State Championship at Mercedes-Benz Stadium.</p>
+            <p><strong style="color:#f1c40f">GAMEPLAY:</strong> Pass Plays: Click and drag to aim, release to throw. Run Plays: Arrow Keys/WASD to control ball carrier. Avoid defenders! On 4th down: Go for it, Field Goal, or Punt.</p>
+            <p><strong style="color:#f1c40f">RECRUITING:</strong> Use Dynasty Points to sign Georgia prospects and build your program rating over multiple seasons.</p>
+        </div>
+        <button class="btn btn-sec" onclick="showMenu()">BACK TO MENU</button>
+    </div>
+    <div id="select-panel" class="ui-panel hidden">
+        <h2>SELECT YOUR PROGRAM</h2>
+        <div style="margin-bottom: 12px;">
+            <select id="class-filter" onchange="renderTeamList()">
+                <option value="ALL">All Classifications (7A-1A)</option>
+                <option value="7A">Class 7A (52 schools)</option>
+                <option value="6A">Class 6A (64 schools)</option>
+                <option value="5A">Class 5A (61 schools)</option>
+                <option value="4A">Class 4A (61 schools)</option>
+                <option value="3A">Class 3A (62 schools)</option>
+                <option value="2A">Class 2A (85 schools)</option>
+                <option value="1A">Class 1A (71 schools)</option>
+            </select>
+        </div>
+        <div class="stats-grid scroll-container" id="team-list"></div>
+        <button class="btn btn-sec" onclick="showMenu()">MAIN MENU</button>
+    </div>
+    <div id="hub-panel" class="ui-panel hidden">
+        <h2 id="hub-title">GEORGIA HIGH SCHOOL HUB</h2>
+        <div class="stats-grid">
+            <div class="stat-card"><div>PROGRAM</div><span id="hub-team">--</span></div>
+            <div class="stat-card"><div>CLASS / REGION</div><span id="hub-class-region">--</span></div>
+            <div class="stat-card"><div>TEAM RATING</div><span id="hub-rating">--</span><div class="rating-bar"><div class="rating-fill high" id="hub-rating-bar" style="width: 0%"></div></div></div>
+            <div class="stat-card"><div>RECORD</div><span id="hub-record">0-0</span></div>
+        </div>
+        <div class="season-progress"><div class="season-progress-fill" id="season-progress" style="width: 0%"></div></div>
+        <p id="hub-next-opp" style="color:#f1c40f; font-weight:bold; margin: 8px 0;">Next Game: --</p>
+        <div id="hub-schedule" class="scroll-container" style="max-height: 150px; margin: 8px 0;"></div>
+        <div>
+            <button class="btn" onclick="startMatch()">PLAY NEXT GAME</button>
+            <button class="btn btn-sec" onclick="showMenu()">QUIT TO MENU</button>
+        </div>
+    </div>
+    <div id="bracket-panel" class="ui-panel hidden">
+        <h2>GHSA STATE PLAYOFFS</h2>
+        <p id="bracket-status">32-Team Tournament to Mercedes-Benz Stadium</p>
+        <div id="bracket-tree" class="scroll-container" style="background:#1a2332; padding:15px; border-radius:8px; max-width:480px; text-align:left; font-size:13px; border: 1px solid #2c3e50;"></div>
+        <button class="btn" onclick="continueFromBracket()">PLAY PLAYOFF GAME</button>
+        <button class="btn btn-sec" onclick="showMenu()">QUIT TO MENU</button>
+    </div>
+    <div id="recruit-panel" class="ui-panel hidden">
+        <h2>OFF-SEASON RECRUITING</h2>
+        <p>Use your Dynasty Points to commit local Georgia talent and build your program!</p>
+        <div id="recruit-points" style="color:#f1c40f; font-weight:bold; margin-bottom:12px; font-size: 18px; font-family: 'Bebas Neue', sans-serif;">Points Remaining: 100</div>
+        <div id="recruit-list" class="scroll-container" style="max-height: 240px; overflow-y: auto; width:100%;"></div>
+        <button class="btn" onclick="finishRecruiting()">START NEW SEASON</button>
+        <button class="btn btn-sec" onclick="showMenu()">QUIT TO MENU</button>
+    </div>
+    <div id="fourthdown-panel" class="ui-panel hidden" style="background: rgba(0,0,0,0.9);">
+        <h2>4TH DOWN DECISION</h2>
+        <p id="fourthdown-situation">4th & 5 from the opponent 35-yard line</p>
+        <div style="display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;">
+            <button class="btn" onclick="fourthDownDecision('go')">GO FOR IT</button>
+            <button class="btn btn-sec" onclick="fourthDownDecision('fg')">FIELD GOAL</button>
+            <button class="btn btn-danger" onclick="fourthDownDecision('punt')">PUNT</button>
+        </div>
+    </div>
+    <div id="fg-panel" class="ui-panel hidden" style="background: rgba(0,0,0,0.9);">
+        <h2>FIELD GOAL ATTEMPT</h2>
+        <p>Click when the cursor is in the green zone!</p>
+        <div class="field-goal-meter">
+            <div class="field-goal-target" id="fg-target" style="left: 35%; width: 30%;"></div>
+            <div class="field-goal-cursor" id="fg-cursor" style="left: 0%;"></div>
+        </div>
+        <button class="btn btn-gold" onclick="attemptFieldGoal()">KICK!</button>
+    </div>
+    <div id="play-panel" class="ui-panel hidden" style="background: rgba(0,0,0,0.88);">
+        <h2>SELECT OFFENSIVE PLAY</h2>
+        <div style="color: #bdc3c7; font-size: 12px; margin-bottom: 8px;"><span id="play-situation">1st & 10 at your own 25</span></div>
+        <div class="play-picker">
+            <button class="play-btn" onclick="selectPlay('PASS_SHORT')"><div class="play-name">SHORT PASS</div><div class="play-desc">Quick Slant / Screen</div><div style="color:#2ecc71; font-size:11px; margin-top:4px;">High Completion</div></button>
+            <button class="play-btn" onclick="selectPlay('PASS_DEEP')"><div class="play-name">DEEP PASS</div><div class="play-desc">Go Route / Post</div><div style="color:#e74c3c; font-size:11px; margin-top:4px;">Big Play Risk</div></button>
+            <button class="play-btn" onclick="selectPlay('PASS_MID')"><div class="play-name">MID PASS</div><div class="play-desc">Crossing Route</div><div style="color:#f39c12; font-size:11px; margin-top:4px;">Balanced</div></button>
+            <button class="play-btn" onclick="selectPlay('RUN_INSIDE')"><div class="play-name">POWER RUN</div><div class="play-desc">HB Dive / Blast</div><div style="color:#2ecc71; font-size:11px; margin-top:4px;">Reliable Yards</div></button>
+            <button class="play-btn" onclick="selectPlay('RUN_OUTSIDE')"><div class="play-name">OUTSIDE RUN</div><div class="play-desc">Sweep / Toss</div><div style="color:#f39c12; font-size:11px; margin-top:4px;">Breakaway</div></button>
+        </div>
+    </div>
+    <div id="recap-panel" class="ui-panel hidden">
+        <h2 id="recap-title">FINAL SCORE</h2>
+        <h1 id="recap-score">0 - 0</h1>
+        <p id="recap-msg"></p>
+        <div id="recap-stats" style="margin: 10px 0; font-size: 13px; color: #bdc3c7;"></div>
+        <button class="btn" onclick="finishGame()">CONTINUE</button>
+    </div>
+    <canvas id="gameCanvas"></canvas>
+</div>
+<script>
+
+const CLASSIFICATIONS = {
+    "7A": { name: "Class 7A", diffMultiplier: 1.15 },
+    "6A": { name: "Class 6A", diffMultiplier: 1.10 },
+    "5A": { name: "Class 5A", diffMultiplier: 1.05 },
+    "4A": { name: "Class 4A", diffMultiplier: 1.00 },
+    "3A": { name: "Class 3A", diffMultiplier: 0.95 },
+    "2A": { name: "Class 2A", diffMultiplier: 0.90 },
+    "1A": { name: "Class 1A", diffMultiplier: 0.85 }
+};
+
+const DIFFICULTY = {
+    normal:  { defSpeedMod: 1.00, defCount: 3, pointsPerWin: 8, pointsBonus: 15 },
+    hard:    { defSpeedMod: 1.25, defCount: 4, pointsPerWin: 6, pointsBonus: 12 },
+    extreme: { defSpeedMod: 1.50, defCount: 5, pointsPerWin: 5, pointsBonus: 10 }
+};
+
+let currentDifficulty = "normal";
+
+const TEAMS = [
+    { id: "camden", name: "Camden County", class: "7A", region: "R1", rating: 88, color: "#c0392b", secColor: "#ffffff" },
+    { id: "colquitt", name: "Colquitt County", class: "7A", region: "R1", rating: 90, color: "#2980b9", secColor: "#f1c40f" },
+    { id: "lowndes", name: "Lowndes", class: "7A", region: "R1", rating: 89, color: "#27ae60", secColor: "#ffffff" },
+    { id: "richmond_hill", name: "Richmond Hill", class: "7A", region: "R1", rating: 82, color: "#8e44ad", secColor: "#f1c40f" },
+    { id: "valdosta", name: "Valdosta", class: "7A", region: "R1", rating: 85, color: "#d35400", secColor: "#ffffff" },
+    { id: "carrollton", name: "Carrollton", class: "7A", region: "R2", rating: 94, color: "#16a085", secColor: "#ffffff" },
+    { id: "douglas_county", name: "Douglas County", class: "7A", region: "R2", rating: 78, color: "#2c3e50", secColor: "#f39c12" },
+    { id: "east_coweta", name: "East Coweta", class: "7A", region: "R2", rating: 80, color: "#7b1113", secColor: "#f1c40f" },
+    { id: "northgate", name: "Northgate", class: "7A", region: "R2", rating: 79, color: "#00471b", secColor: "#ffffff" },
+    { id: "westlake", name: "Westlake", class: "7A", region: "R2", rating: 81, color: "#00205b", secColor: "#f1c40f" },
+    { id: "campbell", name: "Campbell", class: "7A", region: "R3", rating: 77, color: "#f39c12", secColor: "#000000" },
+    { id: "harrison", name: "Harrison", class: "7A", region: "R3", rating: 83, color: "#b71c1c", secColor: "#ffffff" },
+    { id: "hillgrove", name: "Hillgrove", class: "7A", region: "R3", rating: 82, color: "#1a5276", secColor: "#ffffff" },
+    { id: "kennesaw_mtn", name: "Kennesaw Mountain", class: "7A", region: "R3", rating: 80, color: "#6c3483", secColor: "#f1c40f" },
+    { id: "mceachern", name: "McEachern", class: "7A", region: "R3", rating: 86, color: "#117864", secColor: "#ffffff" },
+    { id: "north_atlanta", name: "North Atlanta", class: "7A", region: "R3", rating: 75, color: "#873600", secColor: "#ffffff" },
+    { id: "pebblebrook", name: "Pebblebrook", class: "7A", region: "R3", rating: 76, color: "#1b4f72", secColor: "#f39c12" },
+    { id: "archer", name: "Archer", class: "7A", region: "R4", rating: 84, color: "#145a32", secColor: "#f1c40f" },
+    { id: "grayson", name: "Grayson", class: "7A", region: "R4", rating: 92, color: "#4a235a", secColor: "#ffffff" },
+    { id: "newton", name: "Newton", class: "7A", region: "R4", rating: 78, color: "#7e5109", secColor: "#ffffff" },
+    { id: "rockdale", name: "Rockdale County", class: "7A", region: "R4", rating: 77, color: "#1a237e", secColor: "#ffeb3b" },
+    { id: "south_gwinnett", name: "South Gwinnett", class: "7A", region: "R4", rating: 79, color: "#880e4f", secColor: "#ffffff" },
+    { id: "cherokee", name: "Cherokee", class: "7A", region: "R5", rating: 81, color: "#004d40", secColor: "#ffeb3b" },
+    { id: "etowah", name: "Etowah", class: "7A", region: "R5", rating: 80, color: "#3e2723", secColor: "#ffeb3b" },
+    { id: "marietta", name: "Marietta", class: "7A", region: "R5", rating: 83, color: "#263238", secColor: "#ff9800" },
+    { id: "north_cobb", name: "North Cobb", class: "7A", region: "R5", rating: 85, color: "#4a148c", secColor: "#ffffff" },
+    { id: "north_paulding", name: "North Paulding", class: "7A", region: "R5", rating: 82, color: "#b71c1c", secColor: "#ffeb3b" },
+    { id: "paulding_county", name: "Paulding County", class: "7A", region: "R5", rating: 78, color: "#0d47a1", secColor: "#ffffff" },
+    { id: "walton", name: "Walton", class: "7A", region: "R5", rating: 84, color: "#1b5e20", secColor: "#ffeb3b" },
+    { id: "wheeler", name: "Wheeler", class: "7A", region: "R5", rating: 79, color: "#e65100", secColor: "#ffffff" },
+    { id: "alliance", name: "Alliance Academy", class: "7A", region: "R6", rating: 70, color: "#c0392b", secColor: "#ffffff" },
+    { id: "denmark", name: "Denmark", class: "7A", region: "R6", rating: 83, color: "#2980b9", secColor: "#f1c40f" },
+    { id: "forsyth_central", name: "Forsyth Central", class: "7A", region: "R6", rating: 80, color: "#27ae60", secColor: "#ffffff" },
+    { id: "innovation", name: "Innovation Academy", class: "7A", region: "R6", rating: 72, color: "#8e44ad", secColor: "#f1c40f" },
+    { id: "lambert", name: "Lambert", class: "7A", region: "R6", rating: 85, color: "#d35400", secColor: "#ffffff" },
+    { id: "north_forsyth", name: "North Forsyth", class: "7A", region: "R6", rating: 82, color: "#16a085", secColor: "#ffffff" },
+    { id: "south_forsyth", name: "South Forsyth", class: "7A", region: "R6", rating: 84, color: "#2c3e50", secColor: "#f39c12" },
+    { id: "west_forsyth", name: "West Forsyth", class: "7A", region: "R6", rating: 83, color: "#7b1113", secColor: "#f1c40f" },
+    { id: "berkmar", name: "Berkmar", class: "7A", region: "R7", rating: 74, color: "#00471b", secColor: "#ffffff" },
+    { id: "brookwood", name: "Brookwood", class: "7A", region: "R7", rating: 85, color: "#00205b", secColor: "#f1c40f" },
+    { id: "duluth", name: "Duluth", class: "7A", region: "R7", rating: 78, color: "#f39c12", secColor: "#000000" },
+    { id: "norcross", name: "Norcross", class: "7A", region: "R7", rating: 84, color: "#b71c1c", secColor: "#ffffff" },
+    { id: "north_gwinnett", name: "North Gwinnett", class: "7A", region: "R7", rating: 88, color: "#1a5276", secColor: "#ffffff" },
+    { id: "parkview", name: "Parkview", class: "7A", region: "R7", rating: 83, color: "#6c3483", secColor: "#f1c40f" },
+    { id: "peachtree_ridge", name: "Peachtree Ridge", class: "7A", region: "R7", rating: 81, color: "#117864", secColor: "#ffffff" },
+    { id: "buford", name: "Buford", class: "7A", region: "R8", rating: 93, color: "#873600", secColor: "#ffffff" },
+    { id: "central_gwinnett", name: "Central Gwinnett", class: "7A", region: "R8", rating: 79, color: "#1b4f72", secColor: "#f39c12" },
+    { id: "collins_hill", name: "Collins Hill", class: "7A", region: "R8", rating: 82, color: "#145a32", secColor: "#f1c40f" },
+    { id: "dacula", name: "Dacula", class: "7A", region: "R8", rating: 80, color: "#4a235a", secColor: "#ffffff" },
+    { id: "discovery", name: "Discovery", class: "7A", region: "R8", rating: 77, color: "#7e5109", secColor: "#ffffff" },
+    { id: "mill_creek", name: "Mill Creek", class: "7A", region: "R8", rating: 84, color: "#1a237e", secColor: "#ffeb3b" },
+    { id: "seckinger", name: "Seckinger", class: "7A", region: "R8", rating: 76, color: "#880e4f", secColor: "#ffffff" },
+    { id: "bradwell", name: "Bradwell Institute", class: "6A", region: "R1", rating: 75, color: "#004d40", secColor: "#ffeb3b" },
+    { id: "brunswick", name: "Brunswick", class: "6A", region: "R1", rating: 78, color: "#3e2723", secColor: "#ffeb3b" },
+    { id: "effingham", name: "Effingham County", class: "6A", region: "R1", rating: 80, color: "#263238", secColor: "#ff9800" },
+    { id: "glynn", name: "Glynn Academy", class: "6A", region: "R1", rating: 82, color: "#4a148c", secColor: "#ffffff" },
+    { id: "greenbrier", name: "Greenbrier", class: "6A", region: "R1", rating: 77, color: "#b71c1c", secColor: "#ffeb3b" },
+    { id: "grovetown", name: "Grovetown", class: "6A", region: "R1", rating: 79, color: "#0d47a1", secColor: "#ffffff" },
+    { id: "lakeside_evans", name: "Lakeside-Evans", class: "6A", region: "R1", rating: 76, color: "#1b5e20", secColor: "#ffeb3b" },
+    { id: "south_effingham", name: "South Effingham", class: "6A", region: "R1", rating: 75, color: "#e65100", secColor: "#ffffff" },
+    { id: "coffee", name: "Coffee", class: "6A", region: "R2", rating: 86, color: "#c0392b", secColor: "#ffffff" },
+    { id: "houston_county", name: "Houston County", class: "6A", region: "R2", rating: 82, color: "#2980b9", secColor: "#f1c40f" },
+    { id: "lee_county", name: "Lee County", class: "6A", region: "R2", rating: 80, color: "#27ae60", secColor: "#ffffff" },
+    { id: "northside_wr", name: "Northside-Warner Robins", class: "6A", region: "R2", rating: 83, color: "#8e44ad", secColor: "#f1c40f" },
+    { id: "thomas_central", name: "Thomas County Central", class: "6A", region: "R2", rating: 85, color: "#d35400", secColor: "#ffffff" },
+    { id: "tift", name: "Tift County", class: "6A", region: "R2", rating: 81, color: "#16a085", secColor: "#ffffff" },
+    { id: "veterans", name: "Veterans", class: "6A", region: "R2", rating: 79, color: "#2c3e50", secColor: "#f39c12" },
+    { id: "creekside", name: "Creekside", class: "6A", region: "R3", rating: 87, color: "#7b1113", secColor: "#f1c40f" },
+    { id: "hughes", name: "Hughes", class: "6A", region: "R3", rating: 81, color: "#00471b", secColor: "#ffffff" },
+    { id: "lovejoy", name: "Lovejoy", class: "6A", region: "R3", rating: 83, color: "#00205b", secColor: "#f1c40f" },
+    { id: "mcintosh", name: "McIntosh", class: "6A", region: "R3", rating: 78, color: "#f39c12", secColor: "#000000" },
+    { id: "morrow", name: "Morrow", class: "6A", region: "R3", rating: 74, color: "#b71c1c", secColor: "#ffffff" },
+    { id: "newnan", name: "Newnan", class: "6A", region: "R3", rating: 80, color: "#1a5276", secColor: "#ffffff" },
+    { id: "northside_col", name: "Northside-Columbus", class: "6A", region: "R3", rating: 79, color: "#6c3483", secColor: "#f1c40f" },
+    { id: "tricities", name: "Tri-Cities", class: "6A", region: "R3", rating: 76, color: "#117864", secColor: "#ffffff" },
+    { id: "woodward", name: "Woodward Academy", class: "6A", region: "R3", rating: 84, color: "#873600", secColor: "#ffffff" },
+    { id: "alcovy", name: "Alcovy", class: "6A", region: "R4", rating: 75, color: "#1b4f72", secColor: "#f39c12" },
+    { id: "chamblee", name: "Chamblee", class: "6A", region: "R4", rating: 78, color: "#145a32", secColor: "#f1c40f" },
+    { id: "decatur", name: "Decatur", class: "6A", region: "R4", rating: 77, color: "#4a235a", secColor: "#ffffff" },
+    { id: "dunwoody", name: "Dunwoody", class: "6A", region: "R4", rating: 76, color: "#7e5109", secColor: "#ffffff" },
+    { id: "heritage_conyers", name: "Heritage-Conyers", class: "6A", region: "R4", rating: 79, color: "#1a237e", secColor: "#ffeb3b" },
+    { id: "lakeside_dekalb", name: "Lakeside-DeKalb", class: "6A", region: "R4", rating: 80, color: "#880e4f", secColor: "#ffffff" },
+    { id: "meadowcreek", name: "Meadowcreek", class: "6A", region: "R4", rating: 74, color: "#004d40", secColor: "#ffeb3b" },
+    { id: "midtown", name: "Midtown", class: "6A", region: "R4", rating: 77, color: "#3e2723", secColor: "#ffeb3b" },
+    { id: "shiloh", name: "Shiloh", class: "6A", region: "R4", rating: 76, color: "#263238", secColor: "#ff9800" },
+    { id: "alexander", name: "Alexander", class: "6A", region: "R5", rating: 80, color: "#4a148c", secColor: "#ffffff" },
+    { id: "chapel_hill", name: "Chapel Hill", class: "6A", region: "R5", rating: 78, color: "#b71c1c", secColor: "#ffeb3b" },
+    { id: "east_paulding", name: "East Paulding", class: "6A", region: "R5", rating: 79, color: "#0d47a1", secColor: "#ffffff" },
+    { id: "hiram", name: "Hiram", class: "6A", region: "R5", rating: 77, color: "#1b5e20", secColor: "#ffeb3b" },
+    { id: "new_manchester", name: "New Manchester", class: "6A", region: "R5", rating: 75, color: "#e65100", secColor: "#ffffff" },
+    { id: "osborne", name: "Osborne", class: "6A", region: "R5", rating: 72, color: "#c0392b", secColor: "#ffffff" },
+    { id: "south_cobb", name: "South Cobb", class: "6A", region: "R5", rating: 76, color: "#2980b9", secColor: "#f1c40f" },
+    { id: "south_paulding", name: "South Paulding", class: "6A", region: "R5", rating: 78, color: "#27ae60", secColor: "#ffffff" },
+    { id: "creekview", name: "Creekview", class: "6A", region: "R6", rating: 81, color: "#8e44ad", secColor: "#f1c40f" },
+    { id: "kell", name: "Kell", class: "6A", region: "R6", rating: 83, color: "#d35400", secColor: "#ffffff" },
+    { id: "lassiter", name: "Lassiter", class: "6A", region: "R6", rating: 82, color: "#16a085", secColor: "#ffffff" },
+    { id: "pope", name: "Pope", class: "6A", region: "R6", rating: 80, color: "#2c3e50", secColor: "#f39c12" },
+    { id: "river_ridge", name: "River Ridge", class: "6A", region: "R6", rating: 79, color: "#7b1113", secColor: "#f1c40f" },
+    { id: "rome", name: "Rome", class: "6A", region: "R6", rating: 84, color: "#00471b", secColor: "#ffffff" },
+    { id: "sequoyah", name: "Sequoyah", class: "6A", region: "R6", rating: 81, color: "#00205b", secColor: "#f1c40f" },
+    { id: "woodstock", name: "Woodstock", class: "6A", region: "R6", rating: 80, color: "#f39c12", secColor: "#000000" },
+    { id: "alpharetta", name: "Alpharetta", class: "6A", region: "R7", rating: 82, color: "#b71c1c", secColor: "#ffffff" },
+    { id: "gainesville", name: "Gainesville", class: "6A", region: "R7", rating: 81, color: "#1a5276", secColor: "#ffffff" },
+    { id: "johns_creek", name: "Johns Creek", class: "6A", region: "R7", rating: 80, color: "#6c3483", secColor: "#f1c40f" },
+    { id: "lanier", name: "Lanier", class: "6A", region: "R7", rating: 79, color: "#117864", secColor: "#ffffff" },
+    { id: "milton", name: "Milton", class: "6A", region: "R7", rating: 87, color: "#873600", secColor: "#ffffff" },
+    { id: "riverwood", name: "Riverwood", class: "6A", region: "R7", rating: 78, color: "#1b4f72", secColor: "#f39c12" },
+    { id: "roswell", name: "Roswell", class: "6A", region: "R7", rating: 83, color: "#145a32", secColor: "#f1c40f" },
+    { id: "apalachee", name: "Apalachee", class: "6A", region: "R8", rating: 78, color: "#4a235a", secColor: "#ffffff" },
+    { id: "cedar_shoals", name: "Cedar Shoals", class: "6A", region: "R8", rating: 79, color: "#7e5109", secColor: "#ffffff" },
+    { id: "clarke_central", name: "Clarke Central", class: "6A", region: "R8", rating: 80, color: "#1a237e", secColor: "#ffeb3b" },
+    { id: "habersham", name: "Habersham Central", class: "6A", region: "R8", rating: 77, color: "#880e4f", secColor: "#ffffff" },
+    { id: "jackson_county", name: "Jackson County", class: "6A", region: "R8", rating: 78, color: "#004d40", secColor: "#ffeb3b" },
+    { id: "loganville", name: "Loganville", class: "6A", region: "R8", rating: 79, color: "#3e2723", secColor: "#ffeb3b" },
+    { id: "mountain_view", name: "Mountain View", class: "6A", region: "R8", rating: 76, color: "#263238", secColor: "#ff9800" },
+    { id: "walnut_grove", name: "Walnut Grove", class: "6A", region: "R8", rating: 77, color: "#4a148c", secColor: "#ffffff" },
+    { id: "benedictine", name: "Benedictine", class: "5A", region: "R1", rating: 84, color: "#b71c1c", secColor: "#ffeb3b" },
+    { id: "evans", name: "Evans", class: "5A", region: "R1", rating: 79, color: "#0d47a1", secColor: "#ffffff" },
+    { id: "groves", name: "Groves", class: "5A", region: "R1", rating: 74, color: "#1b5e20", secColor: "#ffeb3b" },
+    { id: "jenkins", name: "Jenkins", class: "5A", region: "R1", rating: 75, color: "#e65100", secColor: "#ffffff" },
+    { id: "richmond_acad", name: "Richmond Academy", class: "5A", region: "R1", rating: 76, color: "#c0392b", secColor: "#ffffff" },
+    { id: "statesboro", name: "Statesboro", class: "5A", region: "R1", rating: 80, color: "#2980b9", secColor: "#f1c40f" },
+    { id: "ware_co", name: "Ware County", class: "5A", region: "R1", rating: 82, color: "#27ae60", secColor: "#ffffff" },
+    { id: "wayne_co", name: "Wayne County", class: "5A", region: "R1", rating: 81, color: "#8e44ad", secColor: "#f1c40f" },
+    { id: "eagles_landing", name: "Eagles Landing", class: "5A", region: "R2", rating: 80, color: "#d35400", secColor: "#ffffff" },
+    { id: "jones_co", name: "Jones County", class: "5A", region: "R2", rating: 79, color: "#16a085", secColor: "#ffffff" },
+    { id: "locust_grove", name: "Locust Grove", class: "5A", region: "R2", rating: 78, color: "#2c3e50", secColor: "#f39c12" },
+    { id: "ola", name: "Ola", class: "5A", region: "R2", rating: 81, color: "#7b1113", secColor: "#f1c40f" },
+    { id: "perry", name: "Perry", class: "5A", region: "R2", rating: 81, color: "#00471b", secColor: "#ffffff" },
+    { id: "union_grove", name: "Union Grove", class: "5A", region: "R2", rating: 77, color: "#00205b", secColor: "#f1c40f" },
+    { id: "warner_robins", name: "Warner Robins", class: "5A", region: "R2", rating: 82, color: "#f39c12", secColor: "#000000" },
+    { id: "banneker", name: "Banneker", class: "5A", region: "R3", rating: 76, color: "#b71c1c", secColor: "#ffffff" },
+    { id: "central_carroll", name: "Central-Carrollton", class: "5A", region: "R3", rating: 78, color: "#1a5276", secColor: "#ffffff" },
+    { id: "griffin", name: "Griffin", class: "5A", region: "R3", rating: 79, color: "#6c3483", secColor: "#f1c40f" },
+    { id: "harris_co", name: "Harris County", class: "5A", region: "R3", rating: 80, color: "#117864", secColor: "#ffffff" },
+    { id: "lagrange", name: "LaGrange", class: "5A", region: "R3", rating: 78, color: "#873600", secColor: "#ffffff" },
+    { id: "lithia_springs", name: "Lithia Springs", class: "5A", region: "R3", rating: 75, color: "#1b4f72", secColor: "#f39c12" },
+    { id: "starrs_mill", name: "Starr's Mill", class: "5A", region: "R3", rating: 83, color: "#145a32", secColor: "#f1c40f" },
+    { id: "whitewater", name: "Whitewater", class: "5A", region: "R3", rating: 82, color: "#4a235a", secColor: "#ffffff" },
+    { id: "arabia_mtn", name: "Arabia Mountain", class: "5A", region: "R4", rating: 78, color: "#7e5109", secColor: "#ffffff" },
+    { id: "drew", name: "Drew", class: "5A", region: "R4", rating: 75, color: "#1a237e", secColor: "#ffeb3b" },
+    { id: "dutchtown", name: "Dutchtown", class: "5A", region: "R4", rating: 80, color: "#880e4f", secColor: "#ffffff" },
+    { id: "eastside", name: "Eastside", class: "5A", region: "R4", rating: 79, color: "#004d40", secColor: "#ffeb3b" },
+    { id: "forest_park", name: "Forest Park", class: "5A", region: "R4", rating: 74, color: "#3e2723", secColor: "#ffeb3b" },
+    { id: "jonesboro", name: "Jonesboro", class: "5A", region: "R4", rating: 77, color: "#263238", secColor: "#ff9800" },
+    { id: "ml_king", name: "M.L. King", class: "5A", region: "R4", rating: 76, color: "#4a148c", secColor: "#ffffff" },
+    { id: "mundys_mill", name: "Mundy's Mill", class: "5A", region: "R4", rating: 75, color: "#b71c1c", secColor: "#ffeb3b" },
+    { id: "stockbridge", name: "Stockbridge", class: "5A", region: "R4", rating: 79, color: "#0d47a1", secColor: "#ffffff" },
+    { id: "cross_keys", name: "Cross Keys", class: "5A", region: "R5", rating: 72, color: "#1b5e20", secColor: "#ffeb3b" },
+    { id: "druid_hills", name: "Druid Hills", class: "5A", region: "R5", rating: 76, color: "#e65100", secColor: "#ffffff" },
+    { id: "jackson_atl", name: "Jackson-Atlanta", class: "5A", region: "R5", rating: 74, color: "#c0392b", secColor: "#ffffff" },
+    { id: "lithonia", name: "Lithonia", class: "5A", region: "R5", rating: 75, color: "#2980b9", secColor: "#f1c40f" },
+    { id: "mays", name: "Mays", class: "5A", region: "R5", rating: 79, color: "#27ae60", secColor: "#ffffff" },
+    { id: "southwest_dekalb", name: "Southwest DeKalb", class: "5A", region: "R5", rating: 78, color: "#8e44ad", secColor: "#f1c40f" },
+    { id: "tucker", name: "Tucker", class: "5A", region: "R5", rating: 80, color: "#d35400", secColor: "#ffffff" },
+    { id: "blessed_trinity", name: "Blessed Trinity", class: "5A", region: "R6", rating: 83, color: "#16a085", secColor: "#ffffff" },
+    { id: "cambridge", name: "Cambridge", class: "5A", region: "R6", rating: 81, color: "#2c3e50", secColor: "#f39c12" },
+    { id: "centennial", name: "Centennial", class: "5A", region: "R6", rating: 80, color: "#7b1113", secColor: "#f1c40f" },
+    { id: "chattahoochee", name: "Chattahoochee", class: "5A", region: "R6", rating: 79, color: "#00471b", secColor: "#ffffff" },
+    { id: "marist", name: "Marist", class: "5A", region: "R6", rating: 84, color: "#00205b", secColor: "#f1c40f" },
+    { id: "northview", name: "Northview", class: "5A", region: "R6", rating: 82, color: "#f39c12", secColor: "#000000" },
+    { id: "sprayberry", name: "Sprayberry", class: "5A", region: "R6", rating: 78, color: "#b71c1c", secColor: "#ffffff" },
+    { id: "st_pius", name: "St. Pius X", class: "5A", region: "R6", rating: 83, color: "#1a5276", secColor: "#ffffff" },
+    { id: "allatoona", name: "Allatoona", class: "5A", region: "R7", rating: 81, color: "#6c3483", secColor: "#f1c40f" },
+    { id: "cartersville", name: "Cartersville", class: "5A", region: "R7", rating: 82, color: "#117864", secColor: "#ffffff" },
+    { id: "cass", name: "Cass", class: "5A", region: "R7", rating: 78, color: "#873600", secColor: "#ffffff" },
+    { id: "cedartown", name: "Cedartown", class: "5A", region: "R7", rating: 77, color: "#1b4f72", secColor: "#f39c12" },
+    { id: "dalton", name: "Dalton", class: "5A", region: "R7", rating: 80, color: "#145a32", secColor: "#f1c40f" },
+    { id: "villa_rica", name: "Villa Rica", class: "5A", region: "R7", rating: 79, color: "#4a235a", secColor: "#ffffff" },
+    { id: "woodland_cartersville", name: "Woodland-Cartersville", class: "5A", region: "R7", rating: 76, color: "#7e5109", secColor: "#ffffff" },
+    { id: "east_forsyth", name: "East Forsyth", class: "5A", region: "R8", rating: 83, color: "#1a237e", secColor: "#ffeb3b" },
+    { id: "flowery_branch", name: "Flowery Branch", class: "5A", region: "R8", rating: 81, color: "#880e4f", secColor: "#ffffff" },
+    { id: "jefferson", name: "Jefferson", class: "5A", region: "R8", rating: 82, color: "#004d40", secColor: "#ffeb3b" },
+    { id: "johnson_gainesville", name: "Johnson-Gainesville", class: "5A", region: "R8", rating: 78, color: "#3e2723", secColor: "#ffeb3b" },
+    { id: "madison_co", name: "Madison County", class: "5A", region: "R8", rating: 79, color: "#263238", secColor: "#ff9800" },
+    { id: "north_oconee", name: "North Oconee", class: "5A", region: "R8", rating: 84, color: "#4a148c", secColor: "#ffffff" },
+    { id: "winder_barrow", name: "Winder-Barrow", class: "5A", region: "R8", rating: 80, color: "#b71c1c", secColor: "#ffeb3b" },
+    { id: "bainbridge", name: "Bainbridge", class: "4A", region: "R1", rating: 79, color: "#0d47a1", secColor: "#ffffff" },
+    { id: "cairo", name: "Cairo", class: "4A", region: "R1", rating: 78, color: "#1b5e20", secColor: "#ffeb3b" },
+    { id: "columbus", name: "Columbus", class: "4A", region: "R1", rating: 77, color: "#e65100", secColor: "#ffffff" },
+    { id: "dougherty", name: "Dougherty", class: "4A", region: "R1", rating: 74, color: "#c0392b", secColor: "#ffffff" },
+    { id: "hardaway", name: "Hardaway", class: "4A", region: "R1", rating: 76, color: "#2980b9", secColor: "#f1c40f" },
+    { id: "monroe", name: "Monroe", class: "4A", region: "R1", rating: 75, color: "#27ae60", secColor: "#ffffff" },
+    { id: "shaw", name: "Shaw", class: "4A", region: "R1", rating: 74, color: "#8e44ad", secColor: "#f1c40f" },
+    { id: "spencer", name: "Spencer", class: "4A", region: "R1", rating: 73, color: "#d35400", secColor: "#ffffff" },
+    { id: "westover", name: "Westover", class: "4A", region: "R1", rating: 75, color: "#16a085", secColor: "#ffffff" },
+    { id: "baldwin", name: "Baldwin", class: "4A", region: "R2", rating: 78, color: "#2c3e50", secColor: "#f39c12" },
+    { id: "howard", name: "Howard", class: "4A", region: "R2", rating: 79, color: "#7b1113", secColor: "#f1c40f" },
+    { id: "mary_persons", name: "Mary Persons", class: "4A", region: "R2", rating: 80, color: "#00471b", secColor: "#ffffff" },
+    { id: "peach_co", name: "Peach County", class: "4A", region: "R2", rating: 81, color: "#00205b", secColor: "#f1c40f" },
+    { id: "spalding", name: "Spalding", class: "4A", region: "R2", rating: 77, color: "#f39c12", secColor: "#000000" },
+    { id: "troup", name: "Troup County", class: "4A", region: "R2", rating: 78, color: "#b71c1c", secColor: "#ffffff" },
+    { id: "upson_lee", name: "Upson-Lee", class: "4A", region: "R2", rating: 76, color: "#1a5276", secColor: "#ffffff" },
+    { id: "westside_macon", name: "Westside-Macon", class: "4A", region: "R2", rating: 75, color: "#6c3483", secColor: "#f1c40f" },
+    { id: "harlem", name: "Harlem", class: "4A", region: "R3", rating: 76, color: "#117864", secColor: "#ffffff" },
+    { id: "liberty_co", name: "Liberty County", class: "4A", region: "R3", rating: 78, color: "#873600", secColor: "#ffffff" },
+    { id: "long_co", name: "Long County", class: "4A", region: "R3", rating: 74, color: "#1b4f72", secColor: "#f39c12" },
+    { id: "new_hampstead", name: "New Hampstead", class: "4A", region: "R3", rating: 75, color: "#145a32", secColor: "#f1c40f" },
+    { id: "se_bulloch", name: "Southeast Bulloch", class: "4A", region: "R3", rating: 77, color: "#4a235a", secColor: "#ffffff" },
+    { id: "west_laurens", name: "West Laurens", class: "4A", region: "R3", rating: 76, color: "#7e5109", secColor: "#ffffff" },
+    { id: "windsor_forest", name: "Windsor Forest", class: "4A", region: "R3", rating: 75, color: "#1a237e", secColor: "#ffeb3b" },
+    { id: "fayette_co", name: "Fayette County", class: "4A", region: "R4", rating: 79, color: "#880e4f", secColor: "#ffffff" },
+    { id: "hampton", name: "Hampton", class: "4A", region: "R4", rating: 76, color: "#004d40", secColor: "#ffeb3b" },
+    { id: "luella", name: "Luella", class: "4A", region: "R4", rating: 75, color: "#3e2723", secColor: "#ffeb3b" },
+    { id: "mcdonough", name: "McDonough", class: "4A", region: "R4", rating: 77, color: "#263238", secColor: "#ff9800" },
+    { id: "mt_zion_jonesboro", name: "Mt. Zion-Jonesboro", class: "4A", region: "R4", rating: 76, color: "#4a148c", secColor: "#ffffff" },
+    { id: "north_clayton", name: "North Clayton", class: "4A", region: "R4", rating: 74, color: "#b71c1c", secColor: "#ffeb3b" },
+    { id: "riverdale", name: "Riverdale", class: "4A", region: "R4", rating: 75, color: "#0d47a1", secColor: "#ffffff" },
+    { id: "sandy_creek", name: "Sandy Creek", class: "4A", region: "R4", rating: 80, color: "#1b5e20", secColor: "#ffeb3b" },
+    { id: "woodland_stockbridge", name: "Woodland-Stockbridge", class: "4A", region: "R4", rating: 77, color: "#e65100", secColor: "#ffffff" },
+    { id: "clarkston", name: "Clarkston", class: "4A", region: "R5", rating: 73, color: "#c0392b", secColor: "#ffffff" },
+    { id: "douglass_atl", name: "Douglass-Atlanta", class: "4A", region: "R5", rating: 76, color: "#2980b9", secColor: "#f1c40f" },
+    { id: "gac", name: "Greater Atlanta Christian", class: "4A", region: "R5", rating: 82, color: "#27ae60", secColor: "#ffffff" },
+    { id: "north_springs", name: "North Springs", class: "4A", region: "R5", rating: 75, color: "#8e44ad", secColor: "#f1c40f" },
+    { id: "pace_acad", name: "Pace Academy", class: "4A", region: "R5", rating: 81, color: "#d35400", secColor: "#ffffff" },
+    { id: "salem", name: "Salem", class: "4A", region: "R5", rating: 74, color: "#16a085", secColor: "#ffffff" },
+    { id: "stephenson", name: "Stephenson", class: "4A", region: "R5", rating: 78, color: "#2c3e50", secColor: "#f39c12" },
+    { id: "stone_mtn", name: "Stone Mountain", class: "4A", region: "R5", rating: 73, color: "#7b1113", secColor: "#f1c40f" },
+    { id: "westminster", name: "Westminster", class: "4A", region: "R5", rating: 83, color: "#00471b", secColor: "#ffffff" },
+    { id: "chestatee", name: "Chestatee", class: "4A", region: "R6", rating: 77, color: "#00205b", secColor: "#f1c40f" },
+    { id: "dawson_co", name: "Dawson County", class: "4A", region: "R6", rating: 78, color: "#f39c12", secColor: "#000000" },
+    { id: "gilmer", name: "Gilmer", class: "4A", region: "R6", rating: 75, color: "#b71c1c", secColor: "#ffffff" },
+    { id: "north_hall", name: "North Hall", class: "4A", region: "R6", rating: 79, color: "#1a5276", secColor: "#ffffff" },
+    { id: "pickens", name: "Pickens", class: "4A", region: "R6", rating: 76, color: "#6c3483", secColor: "#f1c40f" },
+    { id: "white_co", name: "White County", class: "4A", region: "R6", rating: 77, color: "#117864", secColor: "#ffffff" },
+    { id: "adairsville", name: "Adairsville", class: "4A", region: "R7", rating: 76, color: "#873600", secColor: "#ffffff" },
+    { id: "calhoun", name: "Calhoun", class: "4A", region: "R7", rating: 80, color: "#1b4f72", secColor: "#f39c12" },
+    { id: "heritage_catoosa", name: "Heritage-Catoosa", class: "4A", region: "R7", rating: 78, color: "#145a32", secColor: "#f1c40f" },
+    { id: "nw_whitfield", name: "Northwest Whitfield", class: "4A", region: "R7", rating: 77, color: "#4a235a", secColor: "#ffffff" },
+    { id: "ridgeland", name: "Ridgeland", class: "4A", region: "R7", rating: 75, color: "#7e5109", secColor: "#ffffff" },
+    { id: "se_whitfield", name: "Southeast Whitfield", class: "4A", region: "R7", rating: 76, color: "#1a237e", secColor: "#ffeb3b" },
+    { id: "cherokee_bluff", name: "Cherokee Bluff", class: "4A", region: "R8", rating: 78, color: "#880e4f", secColor: "#ffffff" },
+    { id: "east_hall", name: "East Hall", class: "4A", region: "R8", rating: 76, color: "#004d40", secColor: "#ffeb3b" },
+    { id: "east_jackson", name: "East Jackson", class: "4A", region: "R8", rating: 75, color: "#3e2723", secColor: "#ffeb3b" },
+    { id: "hoschton", name: "Hoschton", class: "4A", region: "R8", rating: 74, color: "#263238", secColor: "#ff9800" },
+    { id: "monroe_area", name: "Monroe Area", class: "4A", region: "R8", rating: 77, color: "#4a148c", secColor: "#ffffff" },
+    { id: "oconee_co", name: "Oconee County", class: "4A", region: "R8", rating: 82, color: "#b71c1c", secColor: "#ffeb3b" },
+    { id: "west_hall", name: "West Hall", class: "4A", region: "R8", rating: 76, color: "#0d47a1", secColor: "#ffffff" },
+    { id: "carver_col", name: "Carver-Columbus", class: "3A", region: "R1", rating: 78, color: "#1b5e20", secColor: "#ffeb3b" },
+    { id: "cook", name: "Cook", class: "3A", region: "R1", rating: 76, color: "#e65100", secColor: "#ffffff" },
+    { id: "crisp_co", name: "Crisp County", class: "3A", region: "R1", rating: 75, color: "#c0392b", secColor: "#ffffff" },
+    { id: "jordan", name: "Jordan", class: "3A", region: "R1", rating: 73, color: "#2980b9", secColor: "#f1c40f" },
+    { id: "kendrick", name: "Kendrick", class: "3A", region: "R1", rating: 72, color: "#27ae60", secColor: "#ffffff" },
+    { id: "sumter_co", name: "Sumter County", class: "3A", region: "R1", rating: 77, color: "#8e44ad", secColor: "#f1c40f" },
+    { id: "worth_co", name: "Worth County", class: "3A", region: "R1", rating: 76, color: "#d35400", secColor: "#ffffff" },
+    { id: "callaway", name: "Callaway", class: "3A", region: "R2", rating: 79, color: "#16a085", secColor: "#ffffff" },
+    { id: "central_macon", name: "Central-Macon", class: "3A", region: "R2", rating: 77, color: "#2c3e50", secColor: "#f39c12" },
+    { id: "jackson", name: "Jackson", class: "3A", region: "R2", rating: 76, color: "#7b1113", secColor: "#f1c40f" },
+    { id: "lamar_co", name: "Lamar County", class: "3A", region: "R2", rating: 75, color: "#00471b", secColor: "#ffffff" },
+    { id: "northeast", name: "Northeast", class: "3A", region: "R2", rating: 74, color: "#00205b", secColor: "#f1c40f" },
+    { id: "pike_co", name: "Pike County", class: "3A", region: "R2", rating: 75, color: "#f39c12", secColor: "#000000" },
+    { id: "rutland", name: "Rutland", class: "3A", region: "R2", rating: 74, color: "#b71c1c", secColor: "#ffffff" },
+    { id: "southwest", name: "Southwest", class: "3A", region: "R2", rating: 73, color: "#1a5276", secColor: "#ffffff" },
+    { id: "appling_co", name: "Appling County", class: "3A", region: "R3", rating: 77, color: "#6c3483", secColor: "#f1c40f" },
+    { id: "beach", name: "Beach", class: "3A", region: "R3", rating: 74, color: "#117864", secColor: "#ffffff" },
+    { id: "brantley_co", name: "Brantley County", class: "3A", region: "R3", rating: 75, color: "#873600", secColor: "#ffffff" },
+    { id: "islands", name: "Islands", class: "3A", region: "R3", rating: 76, color: "#1b4f72", secColor: "#f39c12" },
+    { id: "johnson_sav", name: "Johnson-Savannah", class: "3A", region: "R3", rating: 75, color: "#145a32", secColor: "#f1c40f" },
+    { id: "pierce_co", name: "Pierce County", class: "3A", region: "R3", rating: 78, color: "#4a235a", secColor: "#ffffff" },
+    { id: "tattnall_co", name: "Tattnall County", class: "3A", region: "R3", rating: 76, color: "#7e5109", secColor: "#ffffff" },
+    { id: "toombs_co", name: "Toombs County", class: "3A", region: "R3", rating: 77, color: "#1a237e", secColor: "#ffeb3b" },
+    { id: "burke_co", name: "Burke County", class: "3A", region: "R4", rating: 79, color: "#880e4f", secColor: "#ffffff" },
+    { id: "butler", name: "Butler", class: "3A", region: "R4", rating: 73, color: "#004d40", secColor: "#ffeb3b" },
+    { id: "cross_creek", name: "Cross Creek", class: "3A", region: "R4", rating: 74, color: "#3e2723", secColor: "#ffeb3b" },
+    { id: "hephzibah", name: "Hephzibah", class: "3A", region: "R4", rating: 75, color: "#263238", secColor: "#ff9800" },
+    { id: "thomson", name: "Thomson", class: "3A", region: "R4", rating: 78, color: "#4a148c", secColor: "#ffffff" },
+    { id: "washington_co", name: "Washington County", class: "3A", region: "R4", rating: 77, color: "#b71c1c", secColor: "#ffeb3b" },
+    { id: "westside_aug", name: "Westside-Augusta", class: "3A", region: "R4", rating: 76, color: "#0d47a1", secColor: "#ffffff" },
+    { id: "haralson_co", name: "Haralson County", class: "3A", region: "R5", rating: 75, color: "#1b5e20", secColor: "#ffeb3b" },
+    { id: "holy_innocents", name: "Holy Innocents", class: "3A", region: "R5", rating: 78, color: "#e65100", secColor: "#ffffff" },
+    { id: "kipp_atl", name: "KIPP Atlanta Collegiate", class: "3A", region: "R5", rating: 74, color: "#c0392b", secColor: "#ffffff" },
+    { id: "lovett", name: "Lovett", class: "3A", region: "R5", rating: 80, color: "#2980b9", secColor: "#f1c40f" },
+    { id: "north_cobb_christian", name: "North Cobb Christian", class: "3A", region: "R5", rating: 77, color: "#27ae60", secColor: "#ffffff" },
+    { id: "temple", name: "Temple", class: "3A", region: "R5", rating: 75, color: "#8e44ad", secColor: "#f1c40f" },
+    { id: "therrell", name: "Therrell", class: "3A", region: "R5", rating: 73, color: "#d35400", secColor: "#ffffff" },
+    { id: "wesleyan", name: "Wesleyan", class: "3A", region: "R5", rating: 79, color: "#16a085", secColor: "#ffffff" },
+    { id: "carver_atl", name: "Carver-Atlanta", class: "3A", region: "R6", rating: 75, color: "#2c3e50", secColor: "#f39c12" },
+    { id: "cedar_grove", name: "Cedar Grove", class: "3A", region: "R6", rating: 82, color: "#7b1113", secColor: "#f1c40f" },
+    { id: "columbia", name: "Columbia", class: "3A", region: "R6", rating: 76, color: "#00471b", secColor: "#ffffff" },
+    { id: "hapeville", name: "Hapeville Charter", class: "3A", region: "R6", rating: 78, color: "#00205b", secColor: "#f1c40f" },
+    { id: "mcnair", name: "McNair", class: "3A", region: "R6", rating: 74, color: "#f39c12", secColor: "#000000" },
+    { id: "miller_grove", name: "Miller Grove", class: "3A", region: "R6", rating: 75, color: "#b71c1c", secColor: "#ffffff" },
+    { id: "redan", name: "Redan", class: "3A", region: "R6", rating: 73, color: "#1a5276", secColor: "#ffffff" },
+    { id: "south_atlanta", name: "South Atlanta", class: "3A", region: "R6", rating: 74, color: "#6c3483", secColor: "#f1c40f" },
+    { id: "towers", name: "Towers", class: "3A", region: "R6", rating: 73, color: "#117864", secColor: "#ffffff" },
+    { id: "coahulla_creek", name: "Coahulla Creek", class: "3A", region: "R7", rating: 75, color: "#873600", secColor: "#ffffff" },
+    { id: "lafayette", name: "LaFayette", class: "3A", region: "R7", rating: 76, color: "#1b4f72", secColor: "#f39c12" },
+    { id: "murray_co", name: "Murray County", class: "3A", region: "R7", rating: 74, color: "#145a32", secColor: "#f1c40f" },
+    { id: "north_murray", name: "North Murray", class: "3A", region: "R7", rating: 75, color: "#4a235a", secColor: "#ffffff" },
+    { id: "ringgold", name: "Ringgold", class: "3A", region: "R7", rating: 76, color: "#7e5109", secColor: "#ffffff" },
+    { id: "rockmart", name: "Rockmart", class: "3A", region: "R7", rating: 77, color: "#1a237e", secColor: "#ffeb3b" },
+    { id: "sonoraville", name: "Sonoraville", class: "3A", region: "R7", rating: 75, color: "#880e4f", secColor: "#ffffff" },
+    { id: "union_co", name: "Union County", class: "3A", region: "R7", rating: 76, color: "#004d40", secColor: "#ffeb3b" },
+    { id: "barrow", name: "Barrow", class: "3A", region: "R8", rating: 77, color: "#3e2723", secColor: "#ffeb3b" },
+    { id: "elbert_co", name: "Elbert County", class: "3A", region: "R8", rating: 76, color: "#263238", secColor: "#ff9800" },
+    { id: "franklin_co", name: "Franklin County", class: "3A", region: "R8", rating: 75, color: "#4a148c", secColor: "#ffffff" },
+    { id: "hart_co", name: "Hart County", class: "3A", region: "R8", rating: 74, color: "#b71c1c", secColor: "#ffeb3b" },
+    { id: "hebron", name: "Hebron Christian", class: "3A", region: "R8", rating: 76, color: "#0d47a1", secColor: "#ffffff" },
+    { id: "lumpkin_co", name: "Lumpkin County", class: "3A", region: "R8", rating: 74, color: "#1b5e20", secColor: "#ffeb3b" },
+    { id: "stephens_co", name: "Stephens County", class: "3A", region: "R8", rating: 75, color: "#e65100", secColor: "#ffffff" },
+    { id: "morgan_co", name: "Morgan County", class: "3A", region: "R8", rating: 76, color: "#c0392b", secColor: "#ffffff" },
+    { id: "bacon_co", name: "Bacon County", class: "2A", region: "R1", rating: 74, color: "#2980b9", secColor: "#f1c40f" },
+    { id: "berrien", name: "Berrien", class: "2A", region: "R1", rating: 75, color: "#27ae60", secColor: "#ffffff" },
+    { id: "brooks_co", name: "Brooks County", class: "2A", region: "R1", rating: 76, color: "#8e44ad", secColor: "#f1c40f" },
+    { id: "cook_2a", name: "Cook", class: "2A", region: "R1", rating: 75, color: "#d35400", secColor: "#ffffff" },
+    { id: "fitzgerald", name: "Fitzgerald", class: "2A", region: "R1", rating: 78, color: "#16a085", secColor: "#ffffff" },
+    { id: "jeff_davis", name: "Jeff Davis", class: "2A", region: "R1", rating: 75, color: "#2c3e50", secColor: "#f39c12" },
+    { id: "thomasville", name: "Thomasville", class: "2A", region: "R1", rating: 77, color: "#7b1113", secColor: "#f1c40f" },
+    { id: "ace_charter", name: "ACE Charter", class: "2A", region: "R2", rating: 70, color: "#00471b", secColor: "#ffffff" },
+    { id: "bleckley_co", name: "Bleckley County", class: "2A", region: "R2", rating: 75, color: "#00205b", secColor: "#f1c40f" },
+    { id: "dodge_co", name: "Dodge County", class: "2A", region: "R2", rating: 74, color: "#f39c12", secColor: "#000000" },
+    { id: "dublin", name: "Dublin", class: "2A", region: "R2", rating: 75, color: "#b71c1c", secColor: "#ffffff" },
+    { id: "east_laurens", name: "East Laurens", class: "2A", region: "R2", rating: 73, color: "#1a5276", secColor: "#ffffff" },
+    { id: "swainsboro", name: "Swainsboro", class: "2A", region: "R2", rating: 76, color: "#6c3483", secColor: "#f1c40f" },
+    { id: "vidalia", name: "Vidalia", class: "2A", region: "R2", rating: 75, color: "#117864", secColor: "#ffffff" },
+    { id: "bryan_co", name: "Bryan County", class: "2A", region: "R3", rating: 76, color: "#873600", secColor: "#ffffff" },
+    { id: "calvary_day", name: "Calvary Day School", class: "2A", region: "R3", rating: 77, color: "#1b4f72", secColor: "#f39c12" },
+    { id: "metter", name: "Metter", class: "2A", region: "R3", rating: 74, color: "#145a32", secColor: "#f1c40f" },
+    { id: "savannah", name: "Savannah", class: "2A", region: "R3", rating: 75, color: "#4a235a", secColor: "#ffffff" },
+    { id: "savannah_arts", name: "Savannah Arts Academy", class: "2A", region: "R3", rating: 71, color: "#7e5109", secColor: "#ffffff" },
+    { id: "savannah_christian", name: "Savannah Christian", class: "2A", region: "R3", rating: 76, color: "#1a237e", secColor: "#ffeb3b" },
+    { id: "screven_co", name: "Screven County", class: "2A", region: "R3", rating: 74, color: "#880e4f", secColor: "#ffffff" },
+    { id: "st_vincents", name: "St. Vincent's Academy", class: "2A", region: "R3", rating: 72, color: "#004d40", secColor: "#ffeb3b" },
+    { id: "woodville_tompkins", name: "Woodville-Tompkins", class: "2A", region: "R3", rating: 73, color: "#3e2723", secColor: "#ffeb3b" },
+    { id: "aquinas", name: "Aquinas", class: "2A", region: "R4", rating: 76, color: "#263238", secColor: "#ff9800" },
+    { id: "davidson_fine_arts", name: "Davidson Fine Arts", class: "2A", region: "R4", rating: 71, color: "#4a148c", secColor: "#ffffff" },
+    { id: "glenn_hills", name: "Glenn Hills", class: "2A", region: "R4", rating: 73, color: "#b71c1c", secColor: "#ffeb3b" },
+    { id: "jasper_co", name: "Jasper County", class: "2A", region: "R4", rating: 72, color: "#0d47a1", secColor: "#ffffff" },
+    { id: "jefferson_co", name: "Jefferson County", class: "2A", region: "R4", rating: 74, color: "#1b5e20", secColor: "#ffeb3b" },
+    { id: "johnson_aug", name: "Johnson-Augusta", class: "2A", region: "R4", rating: 73, color: "#e65100", secColor: "#ffffff" },
+    { id: "josey", name: "Josey", class: "2A", region: "R4", rating: 72, color: "#c0392b", secColor: "#ffffff" },
+    { id: "laney", name: "Laney", class: "2A", region: "R4", rating: 74, color: "#2980b9", secColor: "#f1c40f" },
+    { id: "putnam_co", name: "Putnam County", class: "2A", region: "R4", rating: 75, color: "#27ae60", secColor: "#ffffff" },
+    { id: "social_circle", name: "Social Circle", class: "2A", region: "R4", rating: 74, color: "#8e44ad", secColor: "#f1c40f" },
+    { id: "tech_career", name: "Technical Career Magnet", class: "2A", region: "R4", rating: 70, color: "#d35400", secColor: "#ffffff" },
+    { id: "ben_franklin", name: "Ben Franklin Academy", class: "2A", region: "R5", rating: 70, color: "#16a085", secColor: "#ffffff" },
+    { id: "coretta_scott_king", name: "Coretta Scott King Academy", class: "2A", region: "R5", rating: 70, color: "#2c3e50", secColor: "#f39c12" },
+    { id: "drew_charter", name: "Drew Charter School", class: "2A", region: "R5", rating: 71, color: "#7b1113", secColor: "#f1c40f" },
+    { id: "elca", name: "Eagles Landing Christian", class: "2A", region: "R5", rating: 78, color: "#00471b", secColor: "#ffffff" },
+    { id: "greenforest", name: "Greenforest Christian", class: "2A", region: "R5", rating: 71, color: "#00205b", secColor: "#f1c40f" },
+    { id: "landmark", name: "Landmark Christian", class: "2A", region: "R5", rating: 73, color: "#f39c12", secColor: "#000000" },
+    { id: "paideia", name: "Paideia", class: "2A", region: "R5", rating: 72, color: "#b71c1c", secColor: "#ffffff" },
+    { id: "southwest_atl_christian", name: "Southwest Atlanta Christian", class: "2A", region: "R5", rating: 71, color: "#1a5276", secColor: "#ffffff" },
+    { id: "stilwell_arts", name: "Stilwell Arts", class: "2A", region: "R5", rating: 70, color: "#6c3483", secColor: "#f1c40f" },
+    { id: "trinity_christian", name: "Trinity Christian", class: "2A", region: "R5", rating: 75, color: "#117864", secColor: "#ffffff" },
+    { id: "utopian", name: "Utopian Academy", class: "2A", region: "R5", rating: 71, color: "#873600", secColor: "#ffffff" },
+    { id: "wd_mohammed", name: "W.D. Mohammed", class: "2A", region: "R5", rating: 70, color: "#1b4f72", secColor: "#f39c12" },
+    { id: "washington", name: "Washington", class: "2A", region: "R5", rating: 74, color: "#145a32", secColor: "#f1c40f" },
+    { id: "whitefield", name: "Whitefield Academy", class: "2A", region: "R5", rating: 73, color: "#4a235a", secColor: "#ffffff" },
+    { id: "armuchee", name: "Armuchee", class: "2A", region: "R6", rating: 74, color: "#7e5109", secColor: "#ffffff" },
+    { id: "bremen", name: "Bremen", class: "2A", region: "R6", rating: 76, color: "#1a237e", secColor: "#ffeb3b" },
+    { id: "coosa", name: "Coosa", class: "2A", region: "R6", rating: 73, color: "#880e4f", secColor: "#ffffff" },
+    { id: "darlington", name: "Darlington", class: "2A", region: "R6", rating: 75, color: "#004d40", secColor: "#ffeb3b" },
+    { id: "heard_co", name: "Heard County", class: "2A", region: "R6", rating: 75, color: "#3e2723", secColor: "#ffeb3b" },
+    { id: "model", name: "Model", class: "2A", region: "R6", rating: 74, color: "#263238", secColor: "#ff9800" },
+    { id: "mt_zion_carroll", name: "Mt. Zion-Carroll", class: "2A", region: "R6", rating: 73, color: "#4a148c", secColor: "#ffffff" },
+    { id: "pepperell", name: "Pepperell", class: "2A", region: "R6", rating: 75, color: "#b71c1c", secColor: "#ffeb3b" },
+    { id: "chattooga", name: "Chattooga", class: "2A", region: "R7", rating: 74, color: "#0d47a1", secColor: "#ffffff" },
+    { id: "christian_heritage", name: "Christian Heritage", class: "2A", region: "R7", rating: 73, color: "#1b5e20", secColor: "#ffeb3b" },
+    { id: "dade_co", name: "Dade County", class: "2A", region: "R7", rating: 72, color: "#e65100", secColor: "#ffffff" },
+    { id: "dalton_acad", name: "Dalton Academy", class: "2A", region: "R7", rating: 70, color: "#c0392b", secColor: "#ffffff" },
+    { id: "fannin_co", name: "Fannin County", class: "2A", region: "R7", rating: 74, color: "#2980b9", secColor: "#f1c40f" },
+    { id: "ga_cumberland", name: "Georgia-Cumberland Academy", class: "2A", region: "R7", rating: 70, color: "#27ae60", secColor: "#ffffff" },
+    { id: "gordon_central", name: "Gordon Central", class: "2A", region: "R7", rating: 74, color: "#8e44ad", secColor: "#f1c40f" },
+    { id: "gordon_lee", name: "Gordon Lee", class: "2A", region: "R7", rating: 73, color: "#d35400", secColor: "#ffffff" },
+    { id: "lakeview_fto", name: "Lakeview-Ft. Oglethorpe", class: "2A", region: "R7", rating: 74, color: "#16a085", secColor: "#ffffff" },
+    { id: "athens_acad", name: "Athens Academy", class: "2A", region: "R8", rating: 76, color: "#2c3e50", secColor: "#f39c12" },
+    { id: "banks_co", name: "Banks County", class: "2A", region: "R8", rating: 74, color: "#7b1113", secColor: "#f1c40f" },
+    { id: "commerce", name: "Commerce", class: "2A", region: "R8", rating: 75, color: "#00471b", secColor: "#ffffff" },
+    { id: "oglethorpe_co", name: "Oglethorpe County", class: "2A", region: "R8", rating: 73, color: "#00205b", secColor: "#f1c40f" },
+    { id: "prince_avenue", name: "Prince Avenue Christian", class: "2A", region: "R8", rating: 77, color: "#f39c12", secColor: "#000000" },
+    { id: "providence", name: "Providence Christian", class: "2A", region: "R8", rating: 74, color: "#b71c1c", secColor: "#ffffff" },
+    { id: "rabun_co", name: "Rabun County", class: "2A", region: "R8", rating: 76, color: "#1a5276", secColor: "#ffffff" },
+    { id: "atlanta_intl", name: "Atlanta International", class: "2A", region: "R9", rating: 70, color: "#6c3483", secColor: "#f1c40f" },
+    { id: "dekalb_arts", name: "DeKalb School of the Arts", class: "2A", region: "R9", rating: 70, color: "#117864", secColor: "#ffffff" },
+    { id: "fellowship", name: "Fellowship Christian", class: "2A", region: "R9", rating: 74, color: "#873600", secColor: "#ffffff" },
+    { id: "galloway", name: "Galloway", class: "2A", region: "R9", rating: 71, color: "#1b4f72", secColor: "#f39c12" },
+    { id: "kings_ridge", name: "King's Ridge", class: "2A", region: "R9", rating: 73, color: "#145a32", secColor: "#f1c40f" },
+    { id: "mt_bethel", name: "Mt. Bethel Christian", class: "2A", region: "R9", rating: 72, color: "#4a235a", secColor: "#ffffff" },
+    { id: "mt_paran", name: "Mt. Paran Christian", class: "2A", region: "R9", rating: 73, color: "#7e5109", secColor: "#ffffff" },
+    { id: "mt_pisgah", name: "Mt. Pisgah Christian", class: "2A", region: "R9", rating: 72, color: "#1a237e", secColor: "#ffeb3b" },
+    { id: "mount_vernon", name: "Mount Vernon", class: "2A", region: "R9", rating: 74, color: "#880e4f", secColor: "#ffffff" },
+    { id: "st_francis", name: "St. Francis", class: "2A", region: "R9", rating: 71, color: "#004d40", secColor: "#ffeb3b" },
+    { id: "thrive", name: "THRIVE Christian", class: "2A", region: "R9", rating: 70, color: "#3e2723", secColor: "#ffeb3b" },
+    { id: "walker", name: "Walker", class: "2A", region: "R9", rating: 73, color: "#263238", secColor: "#ff9800" },
+    { id: "weber", name: "Weber School", class: "2A", region: "R9", rating: 71, color: "#4a148c", secColor: "#ffffff" },
+    { id: "baker_co", name: "Baker County", class: "1A", region: "R1", rating: 71, color: "#b71c1c", secColor: "#ffeb3b" },
+    { id: "baconton", name: "Baconton", class: "1A", region: "R1", rating: 70, color: "#0d47a1", secColor: "#ffffff" },
+    { id: "calhoun_co", name: "Calhoun County", class: "1A", region: "R1", rating: 70, color: "#1b5e20", secColor: "#ffeb3b" },
+    { id: "early_co", name: "Early County", class: "1A", region: "R1", rating: 71, color: "#e65100", secColor: "#ffffff" },
+    { id: "miller_co", name: "Miller County", class: "1A", region: "R1", rating: 70, color: "#c0392b", secColor: "#ffffff" },
+    { id: "pataula_charter", name: "Pataula Charter", class: "1A", region: "R1", rating: 69, color: "#2980b9", secColor: "#f1c40f" },
+    { id: "quitman_co", name: "Quitman County", class: "1A", region: "R1", rating: 69, color: "#27ae60", secColor: "#ffffff" },
+    { id: "randolph_clay", name: "Randolph-Clay", class: "1A", region: "R1", rating: 70, color: "#8e44ad", secColor: "#f1c40f" },
+    { id: "seminole_co", name: "Seminole County", class: "1A", region: "R1", rating: 70, color: "#d35400", secColor: "#ffffff" },
+    { id: "southwest_ga_stem", name: "Southwest Georgia STEM", class: "1A", region: "R1", rating: 69, color: "#16a085", secColor: "#ffffff" },
+    { id: "spring_creek", name: "Spring Creek", class: "1A", region: "R1", rating: 69, color: "#2c3e50", secColor: "#f39c12" },
+    { id: "stewart_co", name: "Stewart County", class: "1A", region: "R1", rating: 69, color: "#7b1113", secColor: "#f1c40f" },
+    { id: "terrell_co", name: "Terrell County", class: "1A", region: "R1", rating: 70, color: "#00471b", secColor: "#ffffff" },
+    { id: "atkinson_co", name: "Atkinson County", class: "1A", region: "R2", rating: 70, color: "#00205b", secColor: "#f1c40f" },
+    { id: "charlton_co", name: "Charlton County", class: "1A", region: "R2", rating: 71, color: "#f39c12", secColor: "#000000" },
+    { id: "clinch_co", name: "Clinch County", class: "1A", region: "R2", rating: 70, color: "#b71c1c", secColor: "#ffffff" },
+    { id: "echols_co", name: "Echols County", class: "1A", region: "R2", rating: 69, color: "#1a5276", secColor: "#ffffff" },
+    { id: "irwin_co", name: "Irwin County", class: "1A", region: "R2", rating: 74, color: "#6c3483", secColor: "#f1c40f" },
+    { id: "lanier_co", name: "Lanier County", class: "1A", region: "R2", rating: 72, color: "#117864", secColor: "#ffffff" },
+    { id: "mitchell_co", name: "Mitchell County", class: "1A", region: "R2", rating: 71, color: "#873600", secColor: "#ffffff" },
+    { id: "pelham", name: "Pelham", class: "1A", region: "R2", rating: 70, color: "#1b4f72", secColor: "#f39c12" },
+    { id: "claxton", name: "Claxton", class: "1A", region: "R3", rating: 71, color: "#145a32", secColor: "#f1c40f" },
+    { id: "emanuel_co", name: "Emanuel County Institute", class: "1A", region: "R3", rating: 70, color: "#4a235a", secColor: "#ffffff" },
+    { id: "mcintosh_co_acad", name: "McIntosh County Academy", class: "1A", region: "R3", rating: 71, color: "#7e5109", secColor: "#ffffff" },
+    { id: "montgomery_co", name: "Montgomery County", class: "1A", region: "R3", rating: 70, color: "#1a237e", secColor: "#ffeb3b" },
+    { id: "portal", name: "Portal", class: "1A", region: "R3", rating: 70, color: "#880e4f", secColor: "#ffffff" },
+    { id: "savannah_classical", name: "Savannah Classical", class: "1A", region: "R3", rating: 69, color: "#004d40", secColor: "#ffeb3b" },
+    { id: "savannah_early", name: "Savannah Early College", class: "1A", region: "R3", rating: 69, color: "#3e2723", secColor: "#ffeb3b" },
+    { id: "steam_acad", name: "Steam Academy", class: "1A", region: "R3", rating: 69, color: "#263238", secColor: "#ff9800" },
+    { id: "treutlen", name: "Treutlen", class: "1A", region: "R3", rating: 70, color: "#4a148c", secColor: "#ffffff" },
+    { id: "dooly_co", name: "Dooly County", class: "1A", region: "R4", rating: 70, color: "#b71c1c", secColor: "#ffeb3b" },
+    { id: "hawkinsville", name: "Hawkinsville", class: "1A", region: "R4", rating: 71, color: "#0d47a1", secColor: "#ffffff" },
+    { id: "telfair_co", name: "Telfair County", class: "1A", region: "R4", rating: 70, color: "#1b5e20", secColor: "#ffeb3b" },
+    { id: "turner_co", name: "Turner County", class: "1A", region: "R4", rating: 70, color: "#e65100", secColor: "#ffffff" },
+    { id: "twiggs_co", name: "Twiggs County", class: "1A", region: "R4", rating: 69, color: "#c0392b", secColor: "#ffffff" },
+    { id: "wheeler_co", name: "Wheeler County", class: "1A", region: "R4", rating: 70, color: "#2980b9", secColor: "#f1c40f" },
+    { id: "wilcox_co", name: "Wilcox County", class: "1A", region: "R4", rating: 70, color: "#27ae60", secColor: "#ffffff" },
+    { id: "ga_innovation", name: "Georgia School for Innovation", class: "1A", region: "R5", rating: 69, color: "#8e44ad", secColor: "#f1c40f" },
+    { id: "glascock_co", name: "Glascock County", class: "1A", region: "R5", rating: 69, color: "#d35400", secColor: "#ffffff" },
+    { id: "gmc_prep", name: "GMC Prep", class: "1A", region: "R5", rating: 71, color: "#16a085", secColor: "#ffffff" },
+    { id: "hancock_central", name: "Hancock Central", class: "1A", region: "R5", rating: 70, color: "#2c3e50", secColor: "#f39c12" },
+    { id: "jenkins_co", name: "Jenkins County", class: "1A", region: "R5", rating: 70, color: "#7b1113", secColor: "#f1c40f" },
+    { id: "johnson_co", name: "Johnson County", class: "1A", region: "R5", rating: 71, color: "#00471b", secColor: "#ffffff" },
+    { id: "wilkinson_co", name: "Wilkinson County", class: "1A", region: "R5", rating: 70, color: "#00205b", secColor: "#f1c40f" },
+    { id: "central_talbotton", name: "Central-Talbotton", class: "1A", region: "R6", rating: 70, color: "#f39c12", secColor: "#000000" },
+    { id: "chattahoochee_co", name: "Chattahoochee County", class: "1A", region: "R6", rating: 71, color: "#b71c1c", secColor: "#ffffff" },
+    { id: "crawford_co", name: "Crawford County", class: "1A", region: "R6", rating: 70, color: "#1a5276", secColor: "#ffffff" },
+    { id: "furlow_charter", name: "Furlow Charter", class: "1A", region: "R6", rating: 69, color: "#6c3483", secColor: "#f1c40f" },
+    { id: "macon_co", name: "Macon County", class: "1A", region: "R6", rating: 71, color: "#117864", secColor: "#ffffff" },
+    { id: "marion_co", name: "Marion County", class: "1A", region: "R6", rating: 70, color: "#873600", secColor: "#ffffff" },
+    { id: "rainey_mccullers", name: "Rainey-McCullers", class: "1A", region: "R6", rating: 69, color: "#1b4f72", secColor: "#f39c12" },
+    { id: "schley_co", name: "Schley County", class: "1A", region: "R6", rating: 70, color: "#145a32", secColor: "#f1c40f" },
+    { id: "taylor_co", name: "Taylor County", class: "1A", region: "R6", rating: 70, color: "#4a235a", secColor: "#ffffff" },
+    { id: "webster_co", name: "Webster County", class: "1A", region: "R6", rating: 69, color: "#7e5109", secColor: "#ffffff" },
+    { id: "atlanta_classical", name: "Atlanta Classical", class: "1A", region: "R7", rating: 70, color: "#1a237e", secColor: "#ffeb3b" },
+    { id: "best_acad", name: "B.E.S.T. Academy", class: "1A", region: "R7", rating: 69, color: "#880e4f", secColor: "#ffffff" },
+    { id: "bowdon", name: "Bowdon", class: "1A", region: "R7", rating: 73, color: "#004d40", secColor: "#ffeb3b" },
+    { id: "elite_scholars", name: "Elite Scholars Academy", class: "1A", region: "R7", rating: 69, color: "#3e2723", secColor: "#ffeb3b" },
+    { id: "greenville", name: "Greenville", class: "1A", region: "R7", rating: 70, color: "#263238", secColor: "#ff9800" },
+    { id: "manchester", name: "Manchester", class: "1A", region: "R7", rating: 71, color: "#4a148c", secColor: "#ffffff" },
+    { id: "nw_classical", name: "Northwest Classical Academy", class: "1A", region: "R7", rating: 69, color: "#b71c1c", secColor: "#ffeb3b" },
+    { id: "trion", name: "Trion", class: "1A", region: "R7", rating: 71, color: "#0d47a1", secColor: "#ffffff" },
+    { id: "greene_co", name: "Greene County", class: "1A", region: "R8", rating: 71, color: "#1b5e20", secColor: "#ffeb3b" },
+    { id: "lake_oconee", name: "Lake Oconee Academy", class: "1A", region: "R8", rating: 69, color: "#e65100", secColor: "#ffffff" },
+    { id: "lincoln_co", name: "Lincoln County", class: "1A", region: "R8", rating: 71, color: "#c0392b", secColor: "#ffffff" },
+    { id: "taliaferro_co", name: "Taliaferro County", class: "1A", region: "R8", rating: 69, color: "#2980b9", secColor: "#f1c40f" },
+    { id: "towns_co", name: "Towns County", class: "1A", region: "R8", rating: 70, color: "#27ae60", secColor: "#ffffff" },
+    { id: "warren_co", name: "Warren County", class: "1A", region: "R8", rating: 70, color: "#8e44ad", secColor: "#f1c40f" },
+    { id: "washington_wilkes", name: "Washington-Wilkes", class: "1A", region: "R8", rating: 72, color: "#d35400", secColor: "#ffffff" },
+    { id: "woody_gap", name: "Woody Gap", class: "1A", region: "R8", rating: 69, color: "#16a085", secColor: "#ffffff" }
+];
+
+let state = {
+    userTeam: null,
+    currentClass: "7A",
+    wins: 0,
+    losses: 0,
+    week: 1,
+    playoffRound: 0,
+    playoffQualified: false,
+    currentOpponent: null,
+    isBenzGame: false,
+    recruitingPoints: 100,
+    schedule: [],
+    seasonHistory: [],
+    totalTouchdowns: 0,
+    totalYards: 0,
+    championships: 0,
+    playoffWins: 0,
+    allTimeWins: 0,
+    allTimeLosses: 0
+};
+
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+function resizeCanvas() {
+    canvas.width = canvas.parentElement.clientWidth;
+    canvas.height = canvas.parentElement.clientHeight;
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+function setDifficulty(diff) {
+    currentDifficulty = diff;
+    document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('diff-' + diff).classList.add('active');
+}
+
+function showMenu() {
+    hideAllPanels();
+    document.getElementById("menu-panel").classList.remove("hidden");
+}
+
+function showHowToPlay() {
+    hideAllPanels();
+    document.getElementById("howto-panel").classList.remove("hidden");
+}
+
+function hideAllPanels() {
+    document.querySelectorAll('.ui-panel').forEach(p => p.classList.add('hidden'));
+}
+
+function showTeamSelect() {
+    hideAllPanels();
+    document.getElementById("select-panel").classList.remove("hidden");
+    renderTeamList();
+}
+
+function renderTeamList() {
+    const filter = document.getElementById("class-filter").value;
+    const container = document.getElementById("team-list");
+    container.innerHTML = "";
+
+    const filtered = filter === "ALL" ? TEAMS : TEAMS.filter(t => t.class === filter);
+
+    filtered.forEach(t => {
+        const card = document.createElement("div");
+        card.className = "stat-card";
+        card.style.cursor = "pointer";
+        card.style.borderLeft = "5px solid " + t.color;
+
+        let ratingClass = t.rating >= 85 ? 'high' : t.rating >= 78 ? 'mid' : 'low';
+
+        card.innerHTML = `
+            <div style="display:flex; align-items:center; justify-content:space-between;">
+                <div>
+                    <div>${CLASSIFICATIONS[t.class].name} ${t.region}</div>
+                    <span>${t.name}</span>
+                </div>
+                <div style="text-align:right;">
+                    <div style="font-family:'Bebas Neue'; font-size:24px; color:#f39c12;">${t.rating}</div>
+                    <div style="font-size:10px; color:#7f8c8d;">OVR</div>
+                </div>
+            </div>
+            <div class="rating-bar"><div class="rating-fill ${ratingClass}" style="width: ${t.rating}%"></div></div>
+        `;
+        card.onclick = () => selectTeam(t);
+        container.appendChild(card);
+    });
+}
+
+function selectTeam(team) {
+    state.userTeam = JSON.parse(JSON.stringify(team));
+    state.currentClass = team.class;
+    state.wins = 0;
+    state.losses = 0;
+    state.week = 1;
+    state.playoffRound = 0;
+    state.playoffQualified = false;
+    state.totalTouchdowns = 0;
+    state.totalYards = 0;
+    state.seasonHistory = [];
+    generateSchedule();
+
+    hideAllPanels();
+    updateHub();
+    document.getElementById("hub-panel").classList.remove("hidden");
+}
+
+function generateSchedule() {
+    state.schedule = [];
+
+    let corkyOpps = TEAMS.filter(t => t.id !== state.userTeam.id && t.rating >= 80);
+    let corkyOpp = corkyOpps[Math.floor(Math.random() * corkyOpps.length)] || TEAMS[0];
+    state.schedule.push({ week: 1, opponent: corkyOpp, venue: "Mercedes-Benz Stadium", type: "CORKY KELL", result: null });
+
+    let classOpps = TEAMS.filter(t => t.class === state.currentClass && t.id !== state.userTeam.id);
+    let regionOpps = TEAMS.filter(t => t.class === state.currentClass && t.region === state.userTeam.region && t.id !== state.userTeam.id);
+
+    for (let w = 2; w <= 8; w++) {
+        let opp;
+        if (regionOpps.length > 0 && Math.random() > 0.5) {
+            opp = regionOpps[Math.floor(Math.random() * regionOpps.length)];
+        } else {
+            opp = classOpps[Math.floor(Math.random() * classOpps.length)];
+        }
+        state.schedule.push({ week: w, opponent: opp, venue: "Home", type: "REGULAR", result: null });
+    }
+}
+
+function updateHub() {
+    document.getElementById("hub-team").innerText = state.userTeam.name;
+    document.getElementById("hub-class-region").innerText = CLASSIFICATIONS[state.userTeam.class].name + " " + state.userTeam.region;
+    document.getElementById("hub-rating").innerText = state.userTeam.rating;
+    document.getElementById("hub-record").innerText = state.wins + "-" + state.losses;
+
+    let ratingPct = Math.min(state.userTeam.rating, 100);
+    let ratingBar = document.getElementById("hub-rating-bar");
+    ratingBar.style.width = ratingPct + "%";
+    ratingBar.className = "rating-fill " + (ratingPct >= 85 ? "high" : ratingPct >= 78 ? "mid" : "low");
+
+    let progress = ((state.week - 1) / 8) * 100;
+    document.getElementById("season-progress").style.width = progress + "%";
+
+    const nextGame = state.schedule.find(g => !g.result);
+    if (nextGame) {
+        state.currentOpponent = nextGame.opponent;
+        state.isBenzGame = (nextGame.type === "CORKY KELL");
+
+        let badge = nextGame.type === "CORKY KELL" ? '<span class="badge badge-gold">CORKY KELL CLASSIC</span>' :
+                    nextGame.week >= 9 ? '<span class="badge">PLAYOFFS</span>' : '';
+        document.getElementById("hub-next-opp").innerHTML =
+            badge + " Week " + nextGame.week + ": vs " + nextGame.opponent.name + " @ " + nextGame.venue;
+    } else {
+        document.getElementById("hub-next-opp").innerText = "Season Complete - Check Playoffs";
+    }
+
+    const scheduleContainer = document.getElementById("hub-schedule");
+    scheduleContainer.innerHTML = "";
+    state.schedule.forEach(g => {
+        const item = document.createElement("div");
+        item.className = "schedule-item" + (g.result ? " completed" : "") + (!g.result && g.week === state.week ? " current" : "");
+
+        let resultText = "";
+        if (g.result) {
+            resultText = '<span class="schedule-result ' + (g.result === 'W' ? 'win' : 'loss') + '">' + g.result + " " + g.score + '</span>';
+        } else {
+            resultText = '<span style="color:#7f8c8d">UPCOMING</span>';
+        }
+
+        item.innerHTML = '<span>Week ' + g.week + ': ' + (g.type === 'CORKY KELL' ? '🏟️ ' : '') + g.opponent.name + '</span>' + resultText;
+        scheduleContainer.appendChild(item);
+    });
+}
+
+function triggerPlayoffs() {
+    hideAllPanels();
+    document.getElementById("bracket-panel").classList.remove("hidden");
+
+    if (state.playoffRound === 0) {
+        state.playoffRound = 1;
+        state.playoffQualified = state.wins >= 4;
+    }
+
+    const tree = document.getElementById("bracket-tree");
+    const rounds = ["", "Round of 32", "Round of 16", "Quarterfinals", "Semifinals", "State Championship"];
+
+    if (!state.playoffQualified) {
+        tree.innerHTML = '<p style="color:#e74c3c; font-weight:bold; text-align:center;">❌ Missed GHSA Playoffs<br>Record: ' + state.wins + "-" + state.losses + ' (Need 4+ wins)</p>';
+        return;
+    }
+
+    let roundTitle = rounds[state.playoffRound];
+    state.isBenzGame = (state.playoffRound >= 4);
+
+    let eligibleOpps = TEAMS.filter(t => t.id !== state.userTeam.id);
+    state.currentOpponent = eligibleOpps[Math.floor(Math.random() * eligibleOpps.length)];
+
+    tree.innerHTML = '<div style="color:#f1c40f; font-weight:bold; margin-bottom:8px; font-family:\'Bebas Neue\'; font-size:18px; text-align:center;">' + roundTitle + '</div>' +
+        '<div class="bracket-round"><div class="bracket-matchup">' +
+        '<span class="bracket-team" style="color:' + state.userTeam.color + '">' + state.userTeam.name + '</span>' +
+        '<span style="color:#7f8c8d">vs</span>' +
+        '<span class="bracket-team" style="color:' + state.currentOpponent.color + '">' + state.currentOpponent.name + '</span>' +
+        '</div></div>' +
+        '<div style="margin-top:8px; text-align:center; color:#2ecc71; font-size:12px;">' +
+        (state.isBenzGame ? '🏟️ Mercedes-Benz Stadium, Atlanta' : '🏈 High School Stadium') + '</div>';
+}
+
+function continueFromBracket() {
+    if (!state.playoffQualified) {
+        startOffseason();
+        return;
+    }
+    hideAllPanels();
+    startMatch();
+}
+
+// ==================== GAME MATCH ENGINE ====================
+let match = {
+    down: 1, toGo: 10, yardLine: 25, userScore: 0, oppScore: 0,
+    quarter: 1, time: 180, selectedPlay: null, phase: 'PREPLAY',
+    ball: { x: 0, y: 0, vx: 0, vy: 0 },
+    qb: { x: 120, y: 0 },
+    wr: { x: 120, y: -50 },
+    rb: { x: 120, y: 0 },
+    defenders: [],
+    aimAngle: 0, aimPower: 0,
+    playYards: 0,
+    gameStats: { passes: 0, completions: 0, rushYards: 0, passYards: 0, tds: 0 }
+};
+
+let keys = {};
+window.addEventListener('keydown', e => { keys[e.key.toLowerCase()] = true; });
+window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+
+function startMatch() {
+    hideAllPanels();
+    document.getElementById("hud").classList.remove("hidden");
+
+    document.getElementById("hud-venue").innerText = state.isBenzGame ? "MERCEDES-BENZ STADIUM" : "HOME FIELD";
+    document.getElementById("hud-venue").style.color = state.isBenzGame ? "#f1c40f" : "#2ecc71";
+
+    match.down = 1; match.toGo = 10; match.yardLine = 25;
+    match.userScore = 0; match.oppScore = 0;
+    match.quarter = 1; match.time = 180;
+    match.gameStats = { passes: 0, completions: 0, rushYards: 0, passYards: 0, tds: 0 };
+
+    setupPlay();
+    requestAnimationFrame(gameLoop);
+}
+
+function setupPlay() {
+    match.phase = 'PREPLAY';
+    document.getElementById("play-panel").classList.remove("hidden");
+
+    let situation = getOrdinal(match.down) + " & " + match.toGo + " at " +
+        (match.yardLine > 50 ? 'opponent ' : '') +
+        (match.yardLine <= 50 ? 'your own ' : '') +
+        (match.yardLine > 50 ? 100 - match.yardLine : match.yardLine);
+    document.getElementById("play-situation").innerText = situation;
+    updateHUD();
+}
+
+function selectPlay(playType) {
+    match.selectedPlay = playType;
+    document.getElementById("play-panel").classList.add("hidden");
+
+    const centerY = canvas.height / 2;
+    match.qb = { x: 100, y: centerY };
+    match.wr = { x: 100, y: centerY - 80 };
+    match.rb = { x: 100, y: centerY + 40 };
+    match.ball = { x: 100, y: centerY, active: false };
+    match.playYards = 0;
+
+    const diff = DIFFICULTY[currentDifficulty];
+    const classDiff = CLASSIFICATIONS[state.currentClass].diffMultiplier;
+    const baseSpeed = (state.currentOpponent.rating / 25) * classDiff * diff.defSpeedMod;
+
+    match.defenders = [];
+    const defCount = diff.defCount;
+    for (let i = 0; i < defCount; i++) {
+        match.defenders.push({
+            x: 250 + Math.random() * 100,
+            y: centerY - 120 + (i * (240 / (defCount - 1 || 1))),
+            speed: baseSpeed + (Math.random() * 0.5),
+            angle: 0
+        });
+    }
+
+    if (playType === 'RUN_INSIDE' || playType === 'RUN_OUTSIDE') {
+        match.phase = 'RUNNING';
+        match.ball.active = true;
+        match.ball.x = match.rb.x;
+        match.ball.y = match.rb.y;
+    } else {
+        match.phase = 'AIMING';
+        if (playType === 'PASS_SHORT') {
+            match.wr.targetX = 280;
+            match.wr.targetY = centerY + (Math.random() - 0.5) * 60;
+        } else if (playType === 'PASS_DEEP') {
+            match.wr.targetX = canvas.width - 60;
+            match.wr.targetY = centerY + (Math.random() - 0.5) * 100;
+        } else {
+            match.wr.targetX = 350 + Math.random() * 100;
+            match.wr.targetY = centerY + (Math.random() - 0.5) * 80;
+        }
+    }
+}
+
+function updateHUD() {
+    document.getElementById("hud-score").innerText =
+        state.userTeam.name.substring(0,3).toUpperCase() + " " + match.userScore +
+        " - " + match.oppScore + " " + state.currentOpponent.name.substring(0,3).toUpperCase();
+    document.getElementById("hud-down").innerText = getOrdinal(match.down) + " & " + match.toGo;
+    const mins = Math.floor(match.time / 60);
+    const secs = (match.time % 60).toString().padStart(2, '0');
+    document.getElementById("hud-clock").innerText = "Q" + match.quarter + " " + mins + ":" + secs;
+}
+
+function getOrdinal(n) {
+    return ["1st","2nd","3rd","4th"][n-1] || n + "th";
+}
+
+// Mouse/Touch aiming
+let isDragging = false;
+let touchStart = { x: 0, y: 0 };
+
+canvas.addEventListener('mousedown', e => {
+    if(match.phase === 'AIMING') {
+        isDragging = true;
+        const rect = canvas.getBoundingClientRect();
+        touchStart = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    }
+});
+
+canvas.addEventListener('mousemove', e => {
+    if(isDragging && match.phase === 'AIMING') {
+        const rect = canvas.getBoundingClientRect();
+        let dx = (e.clientX - rect.left) - match.qb.x;
+        let dy = (e.clientY - rect.top) - match.qb.y;
+        match.aimAngle = Math.atan2(dy, dx);
+        match.aimPower = Math.min(Math.sqrt(dx*dx + dy*dy) * 1.5, 250);
+    }
+});
+
+canvas.addEventListener('mouseup', () => {
+    if(isDragging && match.phase === 'AIMING') {
+        isDragging = false;
+        if (match.aimPower > 20) throwBall();
+    }
+});
+
+// Touch support
+canvas.addEventListener('touchstart', e => {
+    e.preventDefault();
+    if(match.phase === 'AIMING') {
+        isDragging = true;
+        const rect = canvas.getBoundingClientRect();
+        const touch = e.touches[0];
+        touchStart = { x: touch.clientX - rect.left, y: touch.clientY - rect.top };
+    }
+}, {passive: false});
+
+canvas.addEventListener('touchmove', e => {
+    e.preventDefault();
+    if(isDragging && match.phase === 'AIMING') {
+        const rect = canvas.getBoundingClientRect();
+        const touch = e.touches[0];
+        let dx = (touch.clientX - rect.left) - match.qb.x;
+        let dy = (touch.clientY - rect.top) - match.qb.y;
+        match.aimAngle = Math.atan2(dy, dx);
+        match.aimPower = Math.min(Math.sqrt(dx*dx + dy*dy) * 1.5, 250);
+    }
+}, {passive: false});
+
+canvas.addEventListener('touchend', e => {
+    e.preventDefault();
+    if(isDragging && match.phase === 'AIMING') {
+        isDragging = false;
+        if (match.aimPower > 20) throwBall();
+    }
+}, {passive: false});
+
+function throwBall() {
+    match.phase = 'PASSING';
+    match.ball.active = true;
+    match.ball.x = match.qb.x;
+    match.ball.y = match.qb.y;
+    match.ball.vx = Math.cos(match.aimAngle) * (match.aimPower / 8);
+    match.ball.vy = Math.sin(match.aimAngle) * (match.aimPower / 8);
+    match.gameStats.passes++;
+}
+
+let toastTimeout = null;
+function showToast(msg, color) {
+    const existing = document.querySelector('.toast');
+    if (existing) existing.remove();
+    if (toastTimeout) clearTimeout(toastTimeout);
+
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.innerText = msg;
+    if (color) toast.style.color = color;
+    document.getElementById('game-container').appendChild(toast);
+
+    toastTimeout = setTimeout(() => {
+        if (toast.parentNode) toast.remove();
+    }, 1500);
+}
+
+function gameLoop() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawField();
+
+    if (match.phase !== 'PREPLAY') {
+        updatePhysics();
+        drawEntities();
+    }
+
+    if (match.time > 0 && match.phase !== 'END') {
+        requestAnimationFrame(gameLoop);
+    }
+}
+
+function drawField() {
+    ctx.fillStyle = state.isBenzGame ? "#1a3d1a" : "#2d7a2d";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.strokeStyle = "rgba(255,255,255,0.35)";
+    ctx.lineWidth = 1;
+    const yardSpacing = canvas.width / 12;
+    for(let i = 0; i <= 12; i++) {
+        let x = i * yardSpacing;
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, canvas.height);
+        ctx.stroke();
+
+        if (i > 0 && i < 12) {
+            ctx.fillStyle = "rgba(255,255,255,0.25)";
+            ctx.font = "bold 14px 'Bebas Neue'";
+            let yardNum = i <= 5 ? i * 10 : (12 - i) * 10;
+            ctx.fillText(yardNum, x - 8, canvas.height / 2 - 20);
+            ctx.fillText(yardNum, x - 8, canvas.height / 2 + 35);
+        }
+    }
+
+    ctx.strokeStyle = "rgba(255,255,255,0.15)";
+    for(let i = 0; i < canvas.width; i += 20) {
+        ctx.beginPath();
+        ctx.moveTo(i, canvas.height/2 - 60);
+        ctx.lineTo(i + 10, canvas.height/2 - 60);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(i, canvas.height/2 + 60);
+        ctx.lineTo(i + 10, canvas.height/2 + 60);
+        ctx.stroke();
+    }
+
+    ctx.fillStyle = state.userTeam.color;
+    ctx.globalAlpha = 0.3;
+    ctx.fillRect(0, 0, 60, canvas.height);
+    ctx.fillStyle = state.currentOpponent.color;
+    ctx.fillRect(canvas.width - 60, 0, 60, canvas.height);
+    ctx.globalAlpha = 1;
+
+    ctx.fillStyle = "rgba(255,255,255,0.4)";
+    ctx.font = "bold 12px 'Bebas Neue'";
+    ctx.save();
+    ctx.translate(30, canvas.height/2);
+    ctx.rotate(-Math.PI/2);
+    ctx.fillText(state.userTeam.name.substring(0, 10).toUpperCase(), -40, 5);
+    ctx.restore();
+
+    ctx.save();
+    ctx.translate(canvas.width - 30, canvas.height/2);
+    ctx.rotate(Math.PI/2);
+    ctx.fillText(state.currentOpponent.name.substring(0, 10).toUpperCase(), -40, 5);
+    ctx.restore();
+
+    if (state.isBenzGame) {
+        ctx.fillStyle = "rgba(241,196,15,0.08)";
+        ctx.font = "bold 28px 'Bebas Neue'";
+        ctx.textAlign = "center";
+        ctx.fillText("MERCEDES-BENZ STADIUM", canvas.width/2, canvas.height/2);
+        ctx.fillStyle = "rgba(241,196,15,0.05)";
+        ctx.font = "bold 16px 'Bebas Neue'";
+        ctx.fillText("ATLANTA, GEORGIA", canvas.width/2, canvas.height/2 + 25);
+        ctx.textAlign = "left";
+    }
+
+    ctx.strokeStyle = "rgba(255,255,255,0.5)";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(canvas.width/2, 0);
+    ctx.lineTo(canvas.width/2, canvas.height);
+    ctx.stroke();
+}
+
+function updatePhysics() {
+    match.time = Math.max(0, match.time - 0.025);
+
+    if (match.phase === 'AIMING' || match.phase === 'PASSING') {
+        if (match.wr.targetX) {
+            let dx = match.wr.targetX - match.wr.x;
+            let dy = match.wr.targetY - match.wr.y;
+            match.wr.x += dx * 0.03;
+            match.wr.y += dy * 0.03;
+        }
+    }
+
+    if (match.phase === 'PASSING' && match.ball.active) {
+        match.ball.x += match.ball.vx;
+        match.ball.y += match.ball.vy;
+
+        let dist = Math.hypot(match.ball.x - match.wr.x, match.ball.y - match.wr.y);
+        if (dist < 25) {
+            match.phase = 'RUNNING';
+            match.rb = { x: match.wr.x, y: match.wr.y };
+            match.ball.x = match.rb.x;
+            match.ball.y = match.rb.y;
+            match.gameStats.completions++;
+            match.gameStats.passYards += Math.floor((match.rb.x - 100) / 5);
+            showToast("CAUGHT!");
+        }
+
+        if (match.ball.x > canvas.width || match.ball.y < 0 || match.ball.y > canvas.height) {
+            showToast("INCOMPLETE", "#e74c3c");
+            setTimeout(() => endPlay(false, 0), 500);
+        }
+    }
+
+    if (match.phase === 'RUNNING') {
+        let speed = 3.5;
+
+        if (keys['arrowup'] || keys['w']) { match.rb.y -= speed; }
+        if (keys['arrowdown'] || keys['s']) { match.rb.y += speed; }
+        if (keys['arrowleft'] || keys['a']) { match.rb.x -= speed; }
+        if (keys['arrowright'] || keys['d']) { match.rb.x += speed; }
+
+        match.ball.x = match.rb.x;
+        match.ball.y = match.rb.y;
+
+        match.rb.y = Math.max(20, Math.min(canvas.height - 20, match.rb.y));
+        match.rb.x = Math.max(20, Math.min(canvas.width - 20, match.rb.x));
+    }
+
+    const target = (match.phase === 'RUNNING') ? match.rb :
+                   (match.phase === 'PASSING') ? match.ball : match.wr;
+
+    match.defenders.forEach(d => {
+        let dx = target.x - d.x;
+        let dy = target.y - d.y;
+        let dist = Math.hypot(dx, dy);
+
+        if (dist > 0) {
+            d.x += (dx / dist) * d.speed;
+            d.y += (dy / dist) * d.speed;
+        }
+
+        if (dist < 18 && match.phase === 'RUNNING') {
+            let yards = Math.max(0, Math.floor((match.rb.x - 100) / 5));
+            endPlay(false, yards);
+        }
+
+        if (match.phase === 'PASSING' && dist < 15) {
+            let bdx = match.ball.x - d.x;
+            let bdy = match.ball.y - d.y;
+            if (Math.hypot(bdx, bdy) < 20) {
+                showToast("INTERCEPTED!", "#e74c3c");
+                setTimeout(() => {
+                    match.oppScore += 7;
+                    endPlay(false, 0);
+                }, 800);
+            }
+        }
+    });
+
+    if (match.rb && match.rb.x > canvas.width - 50 && match.phase === 'RUNNING') {
+        endPlay(true, 100 - match.yardLine);
+    }
+
+    if (match.time <= 0) {
+        finishMatchSimulation();
+    }
+}
+
+function drawEntities() {
+    if (match.phase !== 'RUNNING') {
+        ctx.fillStyle = state.userTeam.color;
+        ctx.beginPath();
+        ctx.arc(match.qb.x, match.qb.y, 12, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = state.userTeam.secColor;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.fillStyle = "#fff";
+        ctx.font = "bold 10px 'Bebas Neue'";
+        ctx.textAlign = "center";
+        ctx.fillText("QB", match.qb.x, match.qb.y + 3);
+        ctx.textAlign = "left";
+    }
+
+    if (match.selectedPlay && match.selectedPlay.startsWith('PASS') && match.phase !== 'RUNNING') {
+        ctx.fillStyle = state.userTeam.secColor;
+        ctx.beginPath();
+        ctx.arc(match.wr.x, match.wr.y, 9, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "#fff";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.fillStyle = "#000";
+        ctx.font = "bold 9px 'Bebas Neue'";
+        ctx.textAlign = "center";
+        ctx.fillText("WR", match.wr.x, match.wr.y + 3);
+        ctx.textAlign = "left";
+    }
+
+    if (match.phase === 'RUNNING') {
+        ctx.fillStyle = state.userTeam.color;
+        ctx.beginPath();
+        ctx.arc(match.rb.x, match.rb.y, 12, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = state.userTeam.secColor;
+        ctx.lineWidth = 3;
+        ctx.stroke();
+        ctx.fillStyle = "#fff";
+        ctx.font = "bold 10px 'Bebas Neue'";
+        ctx.textAlign = "center";
+        ctx.fillText("RB", match.rb.x, match.rb.y + 3);
+        ctx.textAlign = "left";
+    }
+
+    if (match.ball.active) {
+        ctx.fillStyle = "#fff";
+        ctx.beginPath();
+        ctx.ellipse(match.ball.x, match.ball.y, 6, 4, match.aimAngle || 0, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    match.defenders.forEach((d, i) => {
+        ctx.fillStyle = state.currentOpponent.color;
+        ctx.beginPath();
+        ctx.arc(d.x, d.y, 11, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "#000";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.fillStyle = "#fff";
+        ctx.font = "bold 9px 'Bebas Neue'";
+        ctx.textAlign = "center";
+        ctx.fillText("D" + (i+1), d.x, d.y + 3);
+        ctx.textAlign = "left";
+    });
+
+    if (match.phase === 'AIMING' && isDragging) {
+        ctx.strokeStyle = "rgba(241,196,15,0.6)";
+        ctx.lineWidth = 3;
+        ctx.setLineDash([8, 6]);
+        ctx.beginPath();
+        ctx.moveTo(match.qb.x, match.qb.y);
+        let guideLen = match.aimPower;
+        ctx.lineTo(
+            match.qb.x + Math.cos(match.aimAngle) * guideLen,
+            match.qb.y + Math.sin(match.aimAngle) * guideLen
+        );
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.fillStyle = "#f1c40f";
+        ctx.font = "bold 12px 'Bebas Neue'";
+        ctx.textAlign = "center";
+        ctx.fillText(Math.floor(match.aimPower / 2.5) + "%", match.qb.x, match.qb.y - 20);
+        ctx.textAlign = "left";
+    }
+}
+
+function endPlay(isTouchdown, yardsGained) {
+    match.phase = 'PREPLAY';
+
+    if(isTouchdown) {
+        match.userScore += 7;
+        match.gameStats.tds++;
+        state.totalTouchdowns++;
+        showToast("TOUCHDOWN!", "#f1c40f");
+        match.yardLine = 20; match.down = 1; match.toGo = 10;
+        setTimeout(() => {
+            if (match.time > 0) setupPlay();
+        }, 1200);
+        return;
+    }
+
+    yardsGained = Math.max(0, yardsGained);
+    match.yardLine += yardsGained;
+    match.toGo -= yardsGained;
+    state.totalYards += yardsGained;
+
+    if (match.selectedPlay && match.selectedPlay.startsWith('RUN')) {
+        match.gameStats.rushYards += yardsGained;
+    }
+
+    if(match.toGo <= 0) {
+        match.down = 1; match.toGo = 10;
+    } else {
+        match.down++;
+        if(match.down > 4) {
+            if (match.yardLine >= 60 && match.yardLine <= 85) {
+                showFourthDownPanel();
+                return;
+            } else if (match.yardLine < 50) {
+                match.down = 1; match.toGo = 10; match.yardLine = 20;
+                showToast("PUNT!", "#bdc3c7");
+                if(Math.random() > 0.5) match.oppScore += 7;
+            } else {
+                showFourthDownPanel();
+                return;
+            }
+        }
+    }
+
+    if(match.time <= 0) {
+        finishMatchSimulation();
+    } else {
+        setTimeout(() => setupPlay(), 400);
+    }
+}
+
+function showFourthDownPanel() {
+    match.phase = 'FOURTHDOWN';
+    document.getElementById("fourthdown-panel").classList.remove("hidden");
+    let situation = "4th & " + match.toGo + " at the " +
+        (match.yardLine > 50 ? "opponent " : "") +
+        (match.yardLine <= 50 ? "your own " : "") +
+        (match.yardLine > 50 ? 100 - match.yardLine : match.yardLine) + "-yard line";
+    document.getElementById("fourthdown-situation").innerText = situation;
+}
+
+function fourthDownDecision(decision) {
+    document.getElementById("fourthdown-panel").classList.add("hidden");
+
+    if (decision === 'punt') {
+        match.down = 1; match.toGo = 10; match.yardLine = 20;
+        showToast("PUNT!", "#bdc3c7");
+        if(Math.random() > 0.5) match.oppScore += 7;
+        setTimeout(() => setupPlay(), 600);
+    } else if (decision === 'fg') {
+        showFieldGoalPanel();
+    } else {
+        match.down = 4;
+        setupPlay();
+    }
+}
+
+let fgAnimating = false;
+let fgCursorPos = 0;
+let fgCursorDir = 1;
+let fgAnimId = null;
+
+function showFieldGoalPanel() {
+    document.getElementById("fg-panel").classList.remove("hidden");
+    fgCursorPos = 0;
+    fgCursorDir = 1;
+    fgAnimating = true;
+    animateFGCursor();
+}
+
+function animateFGCursor() {
+    if (!fgAnimating) return;
+    fgCursorPos += fgCursorDir * 1.5;
+    if (fgCursorPos >= 100) { fgCursorPos = 100; fgCursorDir = -1; }
+    if (fgCursorPos <= 0) { fgCursorPos = 0; fgCursorDir = 1; }
+    document.getElementById("fg-cursor").style.left = fgCursorPos + "%";
+    fgAnimId = requestAnimationFrame(animateFGCursor);
+}
+
+function attemptFieldGoal() {
+    fgAnimating = false;
+    if (fgAnimId) cancelAnimationFrame(fgAnimId);
+    document.getElementById("fg-panel").classList.add("hidden");
+
+    let targetLeft = 35;
+    let targetRight = 65;
+
+    if (fgCursorPos >= targetLeft && fgCursorPos <= targetRight) {
+        match.userScore += 3;
+        showToast("FIELD GOAL!", "#f1c40f");
+    } else {
+        showToast("MISSED!", "#e74c3c");
+    }
+
+    match.down = 1; match.toGo = 10; match.yardLine = 20;
+    setTimeout(() => setupPlay(), 800);
+}
+
+function finishMatchSimulation() {
+    match.phase = 'END';
+    document.getElementById("hud").classList.add("hidden");
+    document.getElementById("recap-panel").classList.remove("hidden");
+
+    while (match.oppScore < match.userScore - 14) {
+        match.oppScore += 7;
+    }
+    while (match.userScore < match.oppScore - 14) {
+        match.userScore += 7;
+    }
+
+    if (Math.random() > 0.5 && match.oppScore === 0) match.oppScore += 7;
+    if (Math.random() > 0.7 && match.userScore === 0) match.userScore += 7;
+
+    const userWon = match.userScore > match.oppScore;
+    document.getElementById("recap-score").innerText =
+        state.userTeam.name + " " + match.userScore + " - " + match.oppScore + " " + state.currentOpponent.name;
+
+    let statsHtml = "Passing: " + match.gameStats.completions + "/" + match.gameStats.passes +
+        " | Rush Yds: " + match.gameStats.rushYards +
+        " | Pass Yds: " + match.gameStats.passYards +
+        " | TDs: " + match.gameStats.tds;
+    document.getElementById("recap-stats").innerText = statsHtml;
+
+    if(userWon) {
+        state.wins++;
+        state.allTimeWins++;
+        if (state.playoffRound > 0) {
+            state.playoffWins++;
+            if (state.playoffRound === 5) {
+                state.championships++;
+                document.getElementById("recap-title").innerText = "🏆 STATE CHAMPIONS! 🏆";
+                document.getElementById("recap-msg").innerText =
+                    "CONGRATULATIONS! You won the GHSA State Championship at Mercedes-Benz Stadium!";
+                spawnConfetti();
+            } else {
+                document.getElementById("recap-title").innerText = "PLAYOFF VICTORY!";
+                document.getElementById("recap-msg").innerText =
+                    "Advanced to the next round of the GHSA Playoffs!";
+            }
+        } else {
+            document.getElementById("recap-title").innerText = "VICTORY!";
+            document.getElementById("recap-msg").innerText =
+                "Great win over " + state.currentOpponent.name + "!";
+        }
+    } else {
+        state.losses++;
+        state.allTimeLosses++;
+        if (state.playoffRound > 0) {
+            document.getElementById("recap-title").innerText = "ELIMINATED";
+            document.getElementById("recap-msg").innerText =
+                "Knocked out of the GHSA Playoffs by " + state.currentOpponent.name + ".";
+        } else {
+            document.getElementById("recap-title").innerText = "DEFEAT";
+            document.getElementById("recap-msg").innerText =
+                "Hard fought game against " + state.currentOpponent.name + ".";
+        }
+    }
+
+    const currentGame = state.schedule.find(g => g.week === state.week && !g.result);
+    if (currentGame) {
+        currentGame.result = userWon ? 'W' : 'L';
+        currentGame.score = match.userScore + "-" + match.oppScore;
+    }
+}
+
+function spawnConfetti() {
+    const colors = ['#f1c40f', '#e74c3c', '#3498db', '#2ecc71', '#9b59b6', '#e67e22'];
+    for (let i = 0; i < 50; i++) {
+        setTimeout(() => {
+            const conf = document.createElement('div');
+            conf.className = 'confetti';
+            conf.style.left = Math.random() * 100 + '%';
+            conf.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+            conf.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
+            conf.style.width = (5 + Math.random() * 10) + 'px';
+            conf.style.height = (5 + Math.random() * 10) + 'px';
+            conf.style.animationDuration = (2 + Math.random() * 2) + 's';
+            document.getElementById('game-container').appendChild(conf);
+            setTimeout(() => conf.remove(), 4000);
+        }, i * 50);
+    }
+}
+
+function finishGame() {
+    document.querySelectorAll('.confetti').forEach(c => c.remove());
+    document.getElementById("recap-panel").classList.add("hidden");
+
+    if (state.playoffRound > 0) {
+        if (match.userScore > match.oppScore && state.playoffRound < 5) {
+            state.playoffRound++;
+            triggerPlayoffs();
+        } else {
+            startOffseason();
+        }
+    } else {
+        state.week++;
+        if (state.week > 8) {
+            triggerPlayoffs();
+        } else {
+            updateHub();
+            document.getElementById("hub-panel").classList.remove("hidden");
+        }
+    }
+}
+
+// ==================== OFF-SEASON RECRUITING ====================
+const RECRUITS = [
+    { name: "5★ QB Jayden Smith (Gwinnett)", cost: 50, boost: 3, position: "QB" },
+    { name: "5★ DE Marcus Vance (Valdosta)", cost: 50, boost: 3, position: "DE" },
+    { name: "4★ WR Travis Allen (DeKalb)", cost: 30, boost: 2, position: "WR" },
+    { name: "4★ RB Malik Davis (Cobb)", cost: 30, boost: 2, position: "RB" },
+    { name: "3★ OL Brandon Scott (Chatham)", cost: 15, boost: 1, position: "OL" },
+    { name: "3★ DB Chris Wilson (Fulton)", cost: 15, boost: 1, position: "DB" },
+    { name: "2★ K Tyler Brown (Bibb)", cost: 10, boost: 1, position: "K" }
+];
+
+function startOffseason() {
+    hideAllPanels();
+    document.getElementById("recruit-panel").classList.remove("hidden");
+
+    const diff = DIFFICULTY[currentDifficulty];
+    let basePoints = 50;
+    basePoints += state.wins * diff.pointsPerWin;
+    if (state.playoffQualified) basePoints += diff.pointsBonus;
+    if (state.playoffRound >= 2) basePoints += diff.pointsBonus;
+    if (state.playoffRound >= 3) basePoints += diff.pointsBonus * 2;
+    if (state.playoffRound === 5 && match.userScore > match.oppScore) basePoints += 100;
+
+    state.recruitingPoints = basePoints;
+    renderRecruits();
+}
+
+function renderRecruits() {
+    const list = document.getElementById("recruit-list");
+    document.getElementById("recruit-points").innerText = "Points Remaining: " + state.recruitingPoints;
+    list.innerHTML = "";
+
+    RECRUITS.forEach((r, idx) => {
+        const item = document.createElement("div");
+        item.className = "rec-item";
+        item.id = "recruit-" + idx;
+        item.innerHTML = '<div><span style="font-weight:700; color:#f1c40f;">' + r.name + '</span><div style="font-size:11px; color:#95a5a6;">+' + r.boost + ' OVR Rating</div></div>' +
+            '<button class="btn" style="padding:4px 8px; font-size:12px;" onclick="signRecruit(' + idx + ')">Sign (' + r.cost + ' pts)</button>';
+        list.appendChild(item);
+    });
+}
+
+function signRecruit(idx) {
+    const r = RECRUITS[idx];
+    if (state.recruitingPoints >= r.cost) {
+        state.recruitingPoints -= r.cost;
+        state.userTeam.rating = Math.min(99, state.userTeam.rating + r.boost);
+        showToast("Signed " + r.name + "! +" + r.boost + " OVR");
+
+        const item = document.getElementById("recruit-" + idx);
+        if (item) {
+            item.classList.add("signed");
+            item.querySelector("button").disabled = true;
+            item.querySelector("button").innerText = "SIGNED";
+            item.querySelector("button").style.opacity = "0.5";
+        }
+        document.getElementById("recruit-points").innerText = "Points Remaining: " + state.recruitingPoints;
+    } else {
+        showToast("Not enough points!", "#e74c3c");
+    }
+}
+
+function finishRecruiting() {
+    hideAllPanels();
+    state.week = 1;
+    state.wins = 0;
+    state.losses = 0;
+    state.playoffRound = 0;
+    state.playoffQualified = false;
+    generateSchedule();
+    updateHub();
+    document.getElementById("hub-panel").classList.remove("hidden");
+}
+</script>
+</body>
+</html>
