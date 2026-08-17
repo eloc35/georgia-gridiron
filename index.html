@@ -102,7 +102,7 @@
         <div style="max-width: 480px; text-align: left; font-size: 13px; line-height: 1.6; color: #bdc3c7;">
             <p><strong style="color:#f1c40f">SEASON MODE:</strong> Play an 8-game regular season (Week 1 = Corky Kell at Mercedes-Benz). Win your region to qualify for playoffs.</p>
             <p><strong style="color:#f1c40f">PLAYOFFS:</strong> 32-team bracket based on power rankings. Win 5 games to claim the State Championship at Mercedes-Benz Stadium.</p>
-            <p><strong style="color:#f1c40f">GAMEPLAY:</strong> Old-school controls, one action button. Arrow Keys/WASD move your ball carrier. Hold SPACE for a TURBO burst of speed (watch the meter — it drains fast and refills when you let go). On pass plays your receiver runs the route automatically; press SPACE or tap the field to fire the ball to him the instant he's open. On 4th down: Go for it, Field Goal, or Punt.</p>
+            <p><strong style="color:#f1c40f">GAMEPLAY:</strong> Old-school controls. Arrow Keys/WASD move your ball carrier. Hold SPACE for a TURBO burst of speed (watch the meter — it drains fast and refills when you let go). Tap SHIFT near a defender to JUKE past him — costs some turbo meter and briefly stuns whoever you shook. On pass plays your receiver runs the route automatically; press SPACE or tap the field to fire the ball to him the instant he's open. On 4th down: Go for it, Field Goal, or Punt.</p>
             <p><strong style="color:#f1c40f">RECRUITING:</strong> Use Dynasty Points to sign Georgia prospects and build your program rating over multiple seasons.</p>
         </div>
         <button class="btn btn-sec" onclick="showMenu()">BACK TO MENU</button>
@@ -899,6 +899,7 @@ let match = {
     aimAngle: 0, aimPower: 0,
     playYards: 0,
     turboMeter: 100, turboActive: false,
+    jukeCooldown: 0, jukeFlash: 0,
     gameStats: { passes: 0, completions: 0, rushYards: 0, passYards: 0, tds: 0 }
 };
 
@@ -908,6 +909,9 @@ window.addEventListener('keydown', e => {
     if (e.key === ' ') {
         e.preventDefault();
         if (match.phase === 'AIMING') throwToReceiver();
+    }
+    if (e.key === 'Shift') {
+        if (match.phase === 'RUNNING') attemptJuke();
     }
 });
 window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
@@ -952,6 +956,8 @@ function selectPlay(playType) {
     match.playYards = 0;
     match.turboMeter = 100;
     match.turboActive = false;
+    match.jukeCooldown = 0;
+    match.jukeFlash = 0;
 
     const diff = DIFFICULTY[currentDifficulty];
     const classDiff = CLASSIFICATIONS[state.currentClass].diffMultiplier;
@@ -964,7 +970,8 @@ function selectPlay(playType) {
             x: 250 + Math.random() * 100,
             y: centerY - 120 + (i * (240 / (defCount - 1 || 1))),
             speed: baseSpeed + (Math.random() * 0.5),
-            angle: 0
+            angle: 0,
+            stunned: 0
         });
     }
 
@@ -1029,6 +1036,32 @@ function throwBall() {
     match.ball.vx = Math.cos(match.aimAngle) * (match.aimPower / 8);
     match.ball.vy = Math.sin(match.aimAngle) * (match.aimPower / 8);
     match.gameStats.passes++;
+}
+
+function attemptJuke() {
+    if (match.jukeCooldown > 0 || match.turboMeter < 20) return;
+
+    let nearest = null, nearestDist = Infinity;
+    match.defenders.forEach(d => {
+        if (d.stunned > 0) return;
+        let dist = Math.hypot(match.rb.x - d.x, match.rb.y - d.y);
+        if (dist < nearestDist) { nearestDist = dist; nearest = d; }
+    });
+
+    if (!nearest || nearestDist > 50) return;
+
+    match.turboMeter = Math.max(0, match.turboMeter - 20);
+    match.jukeCooldown = 45;
+    match.jukeFlash = 15;
+    nearest.stunned = 40;
+
+    let dx = match.rb.x - nearest.x;
+    let dy = match.rb.y - nearest.y;
+    let dist = Math.hypot(dx, dy) || 1;
+    match.rb.x = Math.max(20, Math.min(canvas.width - 20, match.rb.x + (dx / dist) * 30));
+    match.rb.y = Math.max(20, Math.min(canvas.height - 20, match.rb.y + (dy / dist) * 30));
+
+    showToast("JUKED!", "#f1c40f");
 }
 
 let toastTimeout = null;
@@ -1182,6 +1215,9 @@ function updatePhysics() {
 
         let speed = match.turboActive ? baseSpeed * 1.8 : baseSpeed;
 
+        if (match.jukeCooldown > 0) match.jukeCooldown--;
+        if (match.jukeFlash > 0) match.jukeFlash--;
+
         if (keys['arrowup'] || keys['w']) { match.rb.y -= speed; }
         if (keys['arrowdown'] || keys['s']) { match.rb.y += speed; }
         if (keys['arrowleft'] || keys['a']) { match.rb.x -= speed; }
@@ -1198,6 +1234,11 @@ function updatePhysics() {
                    (match.phase === 'PASSING') ? match.ball : match.wr;
 
     match.defenders.forEach(d => {
+        if (d.stunned > 0) {
+            d.stunned--;
+            return;
+        }
+
         let dx = target.x - d.x;
         let dy = target.y - d.y;
         let dist = Math.hypot(dx, dy);
@@ -1273,6 +1314,13 @@ function drawEntities() {
             ctx.arc(match.rb.x, match.rb.y, 17, 0, Math.PI * 2);
             ctx.stroke();
         }
+        if (match.jukeFlash > 0) {
+            ctx.strokeStyle = "rgba(255,255,255," + (match.jukeFlash / 15) + ")";
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(match.rb.x, match.rb.y, 24 - match.jukeFlash, 0, Math.PI * 2);
+            ctx.stroke();
+        }
         ctx.fillStyle = state.userTeam.color;
         ctx.beginPath();
         ctx.arc(match.rb.x, match.rb.y, 12, 0, Math.PI * 2);
@@ -1295,7 +1343,7 @@ function drawEntities() {
     }
 
     match.defenders.forEach((d, i) => {
-        ctx.fillStyle = state.currentOpponent.color;
+        ctx.fillStyle = d.stunned > 0 ? "#7f8c8d" : state.currentOpponent.color;
         ctx.beginPath();
         ctx.arc(d.x, d.y, 11, 0, Math.PI * 2);
         ctx.fill();
@@ -1305,7 +1353,7 @@ function drawEntities() {
         ctx.fillStyle = "#fff";
         ctx.font = "bold 9px 'Bebas Neue'";
         ctx.textAlign = "center";
-        ctx.fillText("D" + (i+1), d.x, d.y + 3);
+        ctx.fillText(d.stunned > 0 ? "!" : "D" + (i+1), d.x, d.y + 3);
         ctx.textAlign = "left";
     });
 
@@ -1328,7 +1376,7 @@ function drawEntities() {
         ctx.strokeRect(barX, barY, barW, barH);
         ctx.fillStyle = "#fff";
         ctx.font = "bold 9px 'Bebas Neue'";
-        ctx.fillText("TURBO (HOLD SPACE)", barX + 2, barY - 4);
+        ctx.fillText("TURBO (SPACE) / JUKE (SHIFT)", barX + 2, barY - 4);
     }
 }
 
