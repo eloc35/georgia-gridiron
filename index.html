@@ -49,6 +49,17 @@
         .play-btn:active { transform: translateY(0); }
         .play-btn .play-name { font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 1px; color: #f1c40f; }
         .play-btn .play-desc { font-size: 11px; color: #95a5a6; }
+        .play-diagram { display: block; margin: 0 auto 6px; background: #0d3d1a; border: 1px solid #1a5c2a; border-radius: 4px; }
+        .boxscore { width: 100%; max-width: 460px; margin: 10px auto 0; background: #1a2332; border: 1px solid #2c3e50; border-radius: 6px; padding: 10px 12px; }
+        .boxscore-header { display: flex; justify-content: space-between; font-family: 'Bebas Neue', sans-serif; font-size: 13px; letter-spacing: 1px; margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px solid #2c3e50; }
+        .boxscore-row { display: flex; align-items: center; gap: 6px; margin: 6px 0; }
+        .boxscore-val { width: 26px; text-align: center; font-family: 'Bebas Neue', sans-serif; font-size: 13px; color: #f1c40f; flex-shrink: 0; }
+        .boxscore-mid { flex: 1; display: flex; align-items: center; height: 14px; position: relative; }
+        .boxscore-half { flex: 1; height: 100%; display: flex; background: #0d131a; }
+        .boxscore-half.left { justify-content: flex-end; border-radius: 3px 0 0 3px; }
+        .boxscore-half.right { justify-content: flex-start; border-radius: 0 3px 3px 0; }
+        .boxscore-bar { height: 100%; min-width: 2px; }
+        .boxscore-label { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-size: 8px; color: #fff; background: #1a2332; padding: 0 5px; white-space: nowrap; z-index: 2; }
         select { background: #1a2332; color: #f39c12; border: 2px solid #f1c40f; padding: 8px 12px; font-size: 14px; font-weight: 700; border-radius: 6px; font-family: 'Roboto Condensed', sans-serif; cursor: pointer; }
         .badge { background: #e74c3c; color: white; padding: 3px 8px; font-size: 11px; border-radius: 4px; vertical-align: middle; font-weight: 700; letter-spacing: 1px; }
         .badge-gold { background: #f1c40f; color: #000; }
@@ -188,11 +199,23 @@
     <div id="play-panel" class="ui-panel hidden" style="background: rgba(0,0,0,0.88);">
         <h2>SELECT OFFENSIVE PLAY</h2>
         <div style="color: #bdc3c7; font-size: 12px; margin-bottom: 8px;"><span id="play-situation">1st & 10 at your own 25</span></div>
-        <div class="play-picker" style="max-width: 296px; margin: 15px auto 0;">
-            <button class="play-btn" onclick="selectPlay('RUN_INSIDE')"><div class="play-name">POWER RUN</div><div class="play-desc">HB Dive / Blast</div><div style="color:#2ecc71; font-size:11px; margin-top:4px;">Reliable Yards</div></button>
-            <button class="play-btn" onclick="selectPlay('RUN_OUTSIDE')"><div class="play-name">OUTSIDE RUN</div><div class="play-desc">Sweep / Toss</div><div style="color:#f39c12; font-size:11px; margin-top:4px;">Breakaway</div></button>
-            <button class="play-btn" onclick="selectPlay('PASS_SHORT')"><div class="play-name">SHORT PASS</div><div class="play-desc">Quick Slant / Screen</div><div style="color:#2ecc71; font-size:11px; margin-top:4px;">High Completion</div></button>
-            <button class="play-btn" onclick="selectPlay('PASS_DEEP')"><div class="play-name">DEEP PASS</div><div class="play-desc">Go Route / Post</div><div style="color:#e74c3c; font-size:11px; margin-top:4px;">Big Play Risk</div></button>
+        <div class="play-picker" style="max-width: 300px; margin: 12px auto 0;">
+            <button class="play-btn" onclick="selectPlay('RUN_INSIDE')">
+                <canvas class="play-diagram" data-play="RUN_INSIDE" width="70" height="60"></canvas>
+                <div class="play-name">RUN 1</div><div class="play-desc">Power / Blast</div>
+            </button>
+            <button class="play-btn" onclick="selectPlay('RUN_OUTSIDE')">
+                <canvas class="play-diagram" data-play="RUN_OUTSIDE" width="70" height="60"></canvas>
+                <div class="play-name">RUN 2</div><div class="play-desc">Sweep / Toss</div>
+            </button>
+            <button class="play-btn" onclick="selectPlay('PASS_SHORT')">
+                <canvas class="play-diagram" data-play="PASS_SHORT" width="70" height="60"></canvas>
+                <div class="play-name">PASS 1</div><div class="play-desc">Slant / Screen</div>
+            </button>
+            <button class="play-btn" onclick="selectPlay('PASS_DEEP')">
+                <canvas class="play-diagram" data-play="PASS_DEEP" width="70" height="60"></canvas>
+                <div class="play-name">PASS 2</div><div class="play-desc">Go / Post</div>
+            </button>
         </div>
     </div>
     <div id="recap-panel" class="ui-panel hidden">
@@ -200,6 +223,7 @@
         <h1 id="recap-score">0 - 0</h1>
         <p id="recap-msg"></p>
         <div id="recap-stats" style="margin: 10px 0; font-size: 13px; color: #bdc3c7;"></div>
+        <div id="recap-boxscore"></div>
         <button class="btn" onclick="finishGame()">CONTINUE</button>
     </div>
     <canvas id="gameCanvas"></canvas>
@@ -912,7 +936,7 @@ let match = {
     playYards: 0,
     turboMeter: 100, turboActive: false,
     jukeCooldown: 0, jukeFlash: 0,
-    gameStats: { passes: 0, completions: 0, rushYards: 0, passYards: 0, tds: 0 }
+    gameStats: { passes: 0, completions: 0, rushYards: 0, passYards: 0, tds: 0, turnovers: 0, oppRushYards: 0, oppPassYards: 0, oppTurnovers: 0 }
 };
 
 let keys = {};
@@ -938,7 +962,7 @@ function startMatch() {
     match.down = 1; match.toGo = 10; match.yardLine = 25;
     match.userScore = 0; match.oppScore = 0;
     match.quarter = 1; match.time = 180;
-    match.gameStats = { passes: 0, completions: 0, rushYards: 0, passYards: 0, tds: 0 };
+    match.gameStats = { passes: 0, completions: 0, rushYards: 0, passYards: 0, tds: 0, turnovers: 0, oppRushYards: 0, oppPassYards: 0, oppTurnovers: 0 };
 
     setupPlay();
     requestAnimationFrame(gameLoop);
@@ -1251,22 +1275,31 @@ function drawEndZone(x, w, team) {
 }
 
 function drawField() {
-    ctx.fillStyle = state.isBenzGame ? "#1a3d1a" : "#2d7a2d";
+    ctx.fillStyle = state.isBenzGame ? "#0d5c2e" : "#1e8e3e";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    const stripeW = canvas.width / 12;
-    for (let i = 0; i < 12; i++) {
+    const endZoneW = 50;
+    const stripeW = (canvas.width - endZoneW * 2) / 10;
+    for (let i = 0; i < 10; i++) {
         if (i % 2 === 0) {
-            ctx.fillStyle = "rgba(255,255,255,0.03)";
-            ctx.fillRect(i * stripeW, 0, stripeW, canvas.height);
+            ctx.fillStyle = "rgba(0,0,0,0.08)";
+            ctx.fillRect(endZoneW + i * stripeW, 0, stripeW, canvas.height);
         }
     }
 
-    const endZoneW = 50;
     drawEndZone(0, endZoneW, state.userTeam);
     drawEndZone(canvas.width - endZoneW, endZoneW, state.currentOpponent);
 
-    ctx.strokeStyle = "rgba(255,255,255,0.6)";
+    ctx.strokeStyle = "#fff";
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(0, 3);
+    ctx.lineTo(canvas.width, 3);
+    ctx.moveTo(0, canvas.height - 3);
+    ctx.lineTo(canvas.width, canvas.height - 3);
+    ctx.stroke();
+
+    ctx.strokeStyle = "rgba(255,255,255,0.85)";
     ctx.lineWidth = 3;
     const yardSpacing = (canvas.width - endZoneW * 2) / 10;
     for (let i = 0; i <= 10; i++) {
@@ -1411,6 +1444,7 @@ function updatePhysics() {
             let bdy = match.ball.y - d.y;
             if (Math.hypot(bdx, bdy) < 20) {
                 showToast("INTERCEPTED!", "#e74c3c");
+                match.gameStats.turnovers++;
                 setTimeout(() => {
                     match.oppScore += 7;
                     endPlay(false, 0);
@@ -1614,6 +1648,39 @@ function attemptFieldGoal() {
     setTimeout(() => setupPlay(), 800);
 }
 
+function renderBoxScore() {
+    const you = state.userTeam.name.substring(0, 14).toUpperCase();
+    const opp = state.currentOpponent.name.substring(0, 14).toUpperCase();
+    const userTotal = match.gameStats.rushYards + match.gameStats.passYards;
+    const oppTotal = match.gameStats.oppRushYards + match.gameStats.oppPassYards;
+
+    const rows = [
+        { label: "RUSH YDS", a: match.gameStats.rushYards, b: match.gameStats.oppRushYards },
+        { label: "PASS YDS", a: match.gameStats.passYards, b: match.gameStats.oppPassYards },
+        { label: "TOTAL YDS", a: userTotal, b: oppTotal },
+        { label: "TURNOVERS", a: match.gameStats.turnovers, b: match.gameStats.oppTurnovers }
+    ];
+
+    let html = '<div class="boxscore-header"><span style="color:' + state.userTeam.color + '">' + you + '</span><span style="color:' + state.currentOpponent.color + '">' + opp + '</span></div>';
+
+    rows.forEach(r => {
+        const max = Math.max(r.a, r.b, 1);
+        const aPct = Math.round((r.a / max) * 100);
+        const bPct = Math.round((r.b / max) * 100);
+        html += '<div class="boxscore-row">' +
+            '<span class="boxscore-val">' + r.a + '</span>' +
+            '<div class="boxscore-mid">' +
+                '<div class="boxscore-half left"><div class="boxscore-bar" style="width:' + aPct + '%; background:' + state.userTeam.color + '"></div></div>' +
+                '<span class="boxscore-label">' + r.label + '</span>' +
+                '<div class="boxscore-half right"><div class="boxscore-bar" style="width:' + bPct + '%; background:' + state.currentOpponent.color + '"></div></div>' +
+            '</div>' +
+            '<span class="boxscore-val">' + r.b + '</span>' +
+        '</div>';
+    });
+
+    document.getElementById('recap-boxscore').innerHTML = '<div class="boxscore">' + html + '</div>';
+}
+
 function finishMatchSimulation() {
     match.phase = 'END';
     document.getElementById("hud").classList.add("hidden");
@@ -1638,6 +1705,13 @@ function finishMatchSimulation() {
         " | Pass Yds: " + match.gameStats.passYards +
         " | TDs: " + match.gameStats.tds;
     document.getElementById("recap-stats").innerText = statsHtml;
+
+    const oppTotalYards = 130 + match.oppScore * 17 + Math.floor(Math.random() * 70);
+    const oppRushShare = 0.35 + Math.random() * 0.3;
+    match.gameStats.oppRushYards = Math.floor(oppTotalYards * oppRushShare);
+    match.gameStats.oppPassYards = oppTotalYards - match.gameStats.oppRushYards;
+    match.gameStats.oppTurnovers = Math.random() > 0.6 ? (Math.random() > 0.8 ? 2 : 1) : 0;
+    renderBoxScore();
 
     if(userWon) {
         state.wins++;
@@ -1794,6 +1868,95 @@ function finishRecruiting() {
     updateHub();
     document.getElementById("hub-panel").classList.remove("hidden");
 }
+
+// ==================== PLAY-CALL ROUTE DIAGRAMS ====================
+function drawArrowHead(dctx, x, y, angle, color) {
+    dctx.save();
+    dctx.fillStyle = color;
+    dctx.translate(x, y);
+    dctx.rotate(angle);
+    dctx.beginPath();
+    dctx.moveTo(0, 0);
+    dctx.lineTo(-4, 8);
+    dctx.lineTo(4, 8);
+    dctx.closePath();
+    dctx.fill();
+    dctx.restore();
+}
+
+function drawPlayDiagram(canvasEl, playType) {
+    const dctx = canvasEl.getContext('2d');
+    const w = canvasEl.width, h = canvasEl.height;
+    dctx.clearRect(0, 0, w, h);
+
+    const lineY = h - 12;
+
+    dctx.fillStyle = '#6b7b8c';
+    [14, 24, 34, 44, 56].forEach(x => dctx.fillRect(x - 2, lineY - 2, 4, 4));
+
+    dctx.fillStyle = '#f1c40f';
+    dctx.beginPath();
+    dctx.arc(35, lineY + 7, 3, 0, Math.PI * 2);
+    dctx.fill();
+
+    if (playType === 'RUN_INSIDE') {
+        dctx.strokeStyle = '#fff';
+        dctx.lineWidth = 2;
+        dctx.beginPath();
+        dctx.moveTo(35, lineY + 6);
+        dctx.lineTo(35, 9);
+        dctx.stroke();
+        drawArrowHead(dctx, 35, 6, Math.PI, '#fff');
+    } else if (playType === 'RUN_OUTSIDE') {
+        dctx.strokeStyle = '#fff';
+        dctx.lineWidth = 2;
+        dctx.beginPath();
+        dctx.moveTo(35, lineY + 6);
+        dctx.lineTo(58, lineY - 8);
+        dctx.lineTo(58, 9);
+        dctx.stroke();
+        drawArrowHead(dctx, 58, 6, Math.PI, '#fff');
+    } else if (playType === 'PASS_SHORT') {
+        dctx.fillStyle = '#2ecc71';
+        dctx.beginPath();
+        dctx.arc(58, lineY - 2, 3, 0, Math.PI * 2);
+        dctx.fill();
+        dctx.strokeStyle = '#2ecc71';
+        dctx.lineWidth = 2;
+        dctx.setLineDash([3, 3]);
+        dctx.beginPath();
+        dctx.moveTo(58, lineY - 2);
+        dctx.lineTo(58, 24);
+        dctx.lineTo(36, 18);
+        dctx.stroke();
+        dctx.setLineDash([]);
+        dctx.fillStyle = '#2ecc71';
+        dctx.beginPath();
+        dctx.arc(36, 18, 2.5, 0, Math.PI * 2);
+        dctx.fill();
+    } else if (playType === 'PASS_DEEP') {
+        dctx.fillStyle = '#e74c3c';
+        dctx.beginPath();
+        dctx.arc(12, lineY - 2, 3, 0, Math.PI * 2);
+        dctx.fill();
+        dctx.strokeStyle = '#e74c3c';
+        dctx.lineWidth = 2;
+        dctx.setLineDash([3, 3]);
+        dctx.beginPath();
+        dctx.moveTo(12, lineY - 2);
+        dctx.lineTo(12, 9);
+        dctx.stroke();
+        dctx.setLineDash([]);
+        drawArrowHead(dctx, 12, 6, Math.PI, '#e74c3c');
+    }
+}
+
+function renderPlayDiagrams() {
+    document.querySelectorAll('.play-diagram').forEach(c => {
+        drawPlayDiagram(c, c.dataset.play);
+    });
+}
+renderPlayDiagrams();
 
 if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
