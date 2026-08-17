@@ -102,7 +102,7 @@
         <div style="max-width: 480px; text-align: left; font-size: 13px; line-height: 1.6; color: #bdc3c7;">
             <p><strong style="color:#f1c40f">SEASON MODE:</strong> Play an 8-game regular season (Week 1 = Corky Kell at Mercedes-Benz). Win your region to qualify for playoffs.</p>
             <p><strong style="color:#f1c40f">PLAYOFFS:</strong> 32-team bracket based on power rankings. Win 5 games to claim the State Championship at Mercedes-Benz Stadium.</p>
-            <p><strong style="color:#f1c40f">GAMEPLAY:</strong> Pass Plays: Click and drag to aim, release to throw. Run Plays: Arrow Keys/WASD to control ball carrier. Avoid defenders! On 4th down: Go for it, Field Goal, or Punt.</p>
+            <p><strong style="color:#f1c40f">GAMEPLAY:</strong> Old-school controls, one action button. Arrow Keys/WASD move your ball carrier. Hold SPACE for a TURBO burst of speed (watch the meter — it drains fast and refills when you let go). On pass plays your receiver runs the route automatically; press SPACE or tap the field to fire the ball to him the instant he's open. On 4th down: Go for it, Field Goal, or Punt.</p>
             <p><strong style="color:#f1c40f">RECRUITING:</strong> Use Dynasty Points to sign Georgia prospects and build your program rating over multiple seasons.</p>
         </div>
         <button class="btn btn-sec" onclick="showMenu()">BACK TO MENU</button>
@@ -176,12 +176,11 @@
     <div id="play-panel" class="ui-panel hidden" style="background: rgba(0,0,0,0.88);">
         <h2>SELECT OFFENSIVE PLAY</h2>
         <div style="color: #bdc3c7; font-size: 12px; margin-bottom: 8px;"><span id="play-situation">1st & 10 at your own 25</span></div>
-        <div class="play-picker">
-            <button class="play-btn" onclick="selectPlay('PASS_SHORT')"><div class="play-name">SHORT PASS</div><div class="play-desc">Quick Slant / Screen</div><div style="color:#2ecc71; font-size:11px; margin-top:4px;">High Completion</div></button>
-            <button class="play-btn" onclick="selectPlay('PASS_DEEP')"><div class="play-name">DEEP PASS</div><div class="play-desc">Go Route / Post</div><div style="color:#e74c3c; font-size:11px; margin-top:4px;">Big Play Risk</div></button>
-            <button class="play-btn" onclick="selectPlay('PASS_MID')"><div class="play-name">MID PASS</div><div class="play-desc">Crossing Route</div><div style="color:#f39c12; font-size:11px; margin-top:4px;">Balanced</div></button>
+        <div class="play-picker" style="max-width: 296px; margin: 15px auto 0;">
             <button class="play-btn" onclick="selectPlay('RUN_INSIDE')"><div class="play-name">POWER RUN</div><div class="play-desc">HB Dive / Blast</div><div style="color:#2ecc71; font-size:11px; margin-top:4px;">Reliable Yards</div></button>
             <button class="play-btn" onclick="selectPlay('RUN_OUTSIDE')"><div class="play-name">OUTSIDE RUN</div><div class="play-desc">Sweep / Toss</div><div style="color:#f39c12; font-size:11px; margin-top:4px;">Breakaway</div></button>
+            <button class="play-btn" onclick="selectPlay('PASS_SHORT')"><div class="play-name">SHORT PASS</div><div class="play-desc">Quick Slant / Screen</div><div style="color:#2ecc71; font-size:11px; margin-top:4px;">High Completion</div></button>
+            <button class="play-btn" onclick="selectPlay('PASS_DEEP')"><div class="play-name">DEEP PASS</div><div class="play-desc">Go Route / Post</div><div style="color:#e74c3c; font-size:11px; margin-top:4px;">Big Play Risk</div></button>
         </div>
     </div>
     <div id="recap-panel" class="ui-panel hidden">
@@ -899,11 +898,18 @@ let match = {
     defenders: [],
     aimAngle: 0, aimPower: 0,
     playYards: 0,
+    turboMeter: 100, turboActive: false,
     gameStats: { passes: 0, completions: 0, rushYards: 0, passYards: 0, tds: 0 }
 };
 
 let keys = {};
-window.addEventListener('keydown', e => { keys[e.key.toLowerCase()] = true; });
+window.addEventListener('keydown', e => {
+    keys[e.key.toLowerCase()] = true;
+    if (e.key === ' ') {
+        e.preventDefault();
+        if (match.phase === 'AIMING') throwToReceiver();
+    }
+});
 window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
 
 function startMatch() {
@@ -944,6 +950,8 @@ function selectPlay(playType) {
     match.rb = { x: 100, y: centerY + 40 };
     match.ball = { x: 100, y: centerY, active: false };
     match.playYards = 0;
+    match.turboMeter = 100;
+    match.turboActive = false;
 
     const diff = DIFFICULTY[currentDifficulty];
     const classDiff = CLASSIFICATIONS[state.currentClass].diffMultiplier;
@@ -994,65 +1002,24 @@ function getOrdinal(n) {
     return ["1st","2nd","3rd","4th"][n-1] || n + "th";
 }
 
-// Mouse/Touch aiming
-let isDragging = false;
-let touchStart = { x: 0, y: 0 };
-
-canvas.addEventListener('mousedown', e => {
-    if(match.phase === 'AIMING') {
-        isDragging = true;
-        const rect = canvas.getBoundingClientRect();
-        touchStart = { x: e.clientX - rect.left, y: e.clientY - rect.top };
-    }
+// Tecmo-style throw: one action button (SPACE) or a tap/click, no aiming.
+// The ball is auto-fired straight at your receiver's current spot on his route.
+canvas.addEventListener('click', () => {
+    if (match.phase === 'AIMING') throwToReceiver();
 });
 
-canvas.addEventListener('mousemove', e => {
-    if(isDragging && match.phase === 'AIMING') {
-        const rect = canvas.getBoundingClientRect();
-        let dx = (e.clientX - rect.left) - match.qb.x;
-        let dy = (e.clientY - rect.top) - match.qb.y;
-        match.aimAngle = Math.atan2(dy, dx);
-        match.aimPower = Math.min(Math.sqrt(dx*dx + dy*dy) * 1.5, 250);
-    }
-});
-
-canvas.addEventListener('mouseup', () => {
-    if(isDragging && match.phase === 'AIMING') {
-        isDragging = false;
-        if (match.aimPower > 20) throwBall();
-    }
-});
-
-// Touch support
 canvas.addEventListener('touchstart', e => {
     e.preventDefault();
-    if(match.phase === 'AIMING') {
-        isDragging = true;
-        const rect = canvas.getBoundingClientRect();
-        const touch = e.touches[0];
-        touchStart = { x: touch.clientX - rect.left, y: touch.clientY - rect.top };
-    }
+    if (match.phase === 'AIMING') throwToReceiver();
 }, {passive: false});
 
-canvas.addEventListener('touchmove', e => {
-    e.preventDefault();
-    if(isDragging && match.phase === 'AIMING') {
-        const rect = canvas.getBoundingClientRect();
-        const touch = e.touches[0];
-        let dx = (touch.clientX - rect.left) - match.qb.x;
-        let dy = (touch.clientY - rect.top) - match.qb.y;
-        match.aimAngle = Math.atan2(dy, dx);
-        match.aimPower = Math.min(Math.sqrt(dx*dx + dy*dy) * 1.5, 250);
-    }
-}, {passive: false});
-
-canvas.addEventListener('touchend', e => {
-    e.preventDefault();
-    if(isDragging && match.phase === 'AIMING') {
-        isDragging = false;
-        if (match.aimPower > 20) throwBall();
-    }
-}, {passive: false});
+function throwToReceiver() {
+    let dx = match.wr.x - match.qb.x;
+    let dy = match.wr.y - match.qb.y;
+    match.aimAngle = Math.atan2(dy, dx);
+    match.aimPower = Math.min(Math.sqrt(dx*dx + dy*dy) * 1.5, 250);
+    throwBall();
+}
 
 function throwBall() {
     match.phase = 'PASSING';
@@ -1204,7 +1171,16 @@ function updatePhysics() {
     }
 
     if (match.phase === 'RUNNING') {
-        let speed = 3.5;
+        const baseSpeed = 3.2;
+        match.turboActive = keys[' '] && match.turboMeter > 0;
+
+        if (match.turboActive) {
+            match.turboMeter = Math.max(0, match.turboMeter - 1.8);
+        } else {
+            match.turboMeter = Math.min(100, match.turboMeter + 0.6);
+        }
+
+        let speed = match.turboActive ? baseSpeed * 1.8 : baseSpeed;
 
         if (keys['arrowup'] || keys['w']) { match.rb.y -= speed; }
         if (keys['arrowdown'] || keys['s']) { match.rb.y += speed; }
@@ -1290,6 +1266,13 @@ function drawEntities() {
     }
 
     if (match.phase === 'RUNNING') {
+        if (match.turboActive) {
+            ctx.strokeStyle = "#f1c40f";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(match.rb.x, match.rb.y, 17, 0, Math.PI * 2);
+            ctx.stroke();
+        }
         ctx.fillStyle = state.userTeam.color;
         ctx.beginPath();
         ctx.arc(match.rb.x, match.rb.y, 12, 0, Math.PI * 2);
@@ -1326,25 +1309,26 @@ function drawEntities() {
         ctx.textAlign = "left";
     });
 
-    if (match.phase === 'AIMING' && isDragging) {
-        ctx.strokeStyle = "rgba(241,196,15,0.6)";
-        ctx.lineWidth = 3;
-        ctx.setLineDash([8, 6]);
-        ctx.beginPath();
-        ctx.moveTo(match.qb.x, match.qb.y);
-        let guideLen = match.aimPower;
-        ctx.lineTo(
-            match.qb.x + Math.cos(match.aimAngle) * guideLen,
-            match.qb.y + Math.sin(match.aimAngle) * guideLen
-        );
-        ctx.stroke();
-        ctx.setLineDash([]);
-
+    if (match.phase === 'AIMING') {
         ctx.fillStyle = "#f1c40f";
-        ctx.font = "bold 12px 'Bebas Neue'";
+        ctx.font = "bold 14px 'Bebas Neue'";
         ctx.textAlign = "center";
-        ctx.fillText(Math.floor(match.aimPower / 2.5) + "%", match.qb.x, match.qb.y - 20);
+        ctx.fillText("SPACE / TAP TO THROW", canvas.width / 2, 30);
         ctx.textAlign = "left";
+    }
+
+    if (match.phase === 'RUNNING') {
+        const barX = 10, barY = canvas.height - 24, barW = 104, barH = 14;
+        ctx.fillStyle = "rgba(0,0,0,0.55)";
+        ctx.fillRect(barX, barY, barW, barH);
+        ctx.fillStyle = match.turboMeter > 25 ? "#f1c40f" : "#e74c3c";
+        ctx.fillRect(barX + 2, barY + 2, (barW - 4) * (match.turboMeter / 100), barH - 4);
+        ctx.strokeStyle = "#fff";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(barX, barY, barW, barH);
+        ctx.fillStyle = "#fff";
+        ctx.font = "bold 9px 'Bebas Neue'";
+        ctx.fillText("TURBO (HOLD SPACE)", barX + 2, barY - 4);
     }
 }
 
