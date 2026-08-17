@@ -1107,61 +1107,209 @@ function gameLoop() {
     }
 }
 
+// ==================== RETRO PIXEL SPRITES ====================
+// Blocky Tecmo Bowl / Retro Bowl style player sprites, drawn as a small
+// pixel grid so every player is built from chunky team-colored squares
+// instead of a plain circle.
+function hexToRgb(hex) {
+    hex = hex.replace('#', '');
+    if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+    const num = parseInt(hex, 16);
+    return { r: (num >> 16) & 255, g: (num >> 8) & 255, b: num & 255 };
+}
+
+function shadeColor(hex, percent) {
+    const { r, g, b } = hexToRgb(hex);
+    const t = percent < 0 ? 0 : 255;
+    const p = Math.abs(percent);
+    const nr = Math.round((t - r) * p) + r;
+    const ng = Math.round((t - g) * p) + g;
+    const nb = Math.round((t - b) * p) + b;
+    return "rgb(" + nr + "," + ng + "," + nb + ")";
+}
+
+const PLAYER_FRAME_STAND = [
+    "..DPPD..",
+    ".DPPPPD.",
+    ".PFFFFP.",
+    "..PPPP..",
+    ".PPPPPP.",
+    "KPPPPPPK",
+    ".PPPPPP.",
+    "..SSSS..",
+    ".SS..SS.",
+    ".SS..SS.",
+    ".SS..SS.",
+    ".BB..BB."
+];
+
+const PLAYER_FRAME_RUN = [
+    "..DPPD..",
+    ".DPPPPD.",
+    ".PFFFFP.",
+    "..PPPP..",
+    ".PPPPPP.",
+    "KPPPPPPK",
+    ".PPPPPP.",
+    "..SSSS..",
+    ".S....S.",
+    "SS....SS",
+    "SS....SS",
+    "BB....BB"
+];
+
+function drawPlayerSprite(px, py, primaryHex, secondaryHex, running, mirror, pixelSize) {
+    const frame = running ? PLAYER_FRAME_RUN : PLAYER_FRAME_STAND;
+    const rows = frame.length;
+    const cols = frame[0].length;
+    const colors = {
+        P: primaryHex,
+        D: shadeColor(primaryHex, -0.35),
+        S: secondaryHex,
+        F: "#ffffff",
+        K: "#e8b48c",
+        B: "#111111"
+    };
+    const w = cols * pixelSize;
+    const h = rows * pixelSize;
+    const startX = px - w / 2;
+    const startY = py - h / 2;
+
+    ctx.save();
+    if (mirror) {
+        ctx.translate(px, py);
+        ctx.scale(-1, 1);
+        ctx.translate(-px, -py);
+    }
+    for (let r = 0; r < rows; r++) {
+        const row = frame[r];
+        const y0 = Math.round(startY + r * pixelSize);
+        const y1 = Math.round(startY + (r + 1) * pixelSize);
+        for (let c = 0; c < cols; c++) {
+            const ch = row[c];
+            if (ch === '.') continue;
+            const x0 = Math.round(startX + c * pixelSize);
+            const x1 = Math.round(startX + (c + 1) * pixelSize);
+            ctx.fillStyle = colors[ch];
+            ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+        }
+    }
+    ctx.restore();
+}
+
+function drawFootball(px, py, angle) {
+    ctx.save();
+    ctx.translate(px, py);
+    ctx.rotate(angle || 0);
+    ctx.fillStyle = "#7b4522";
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 6, 3.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#2e1a0c";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.strokeStyle = "#fff";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(-3, 0);
+    ctx.lineTo(3, 0);
+    ctx.stroke();
+    ctx.restore();
+}
+
+function drawEndZone(x, w, team) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(x, 0, w, canvas.height);
+    ctx.clip();
+
+    ctx.fillStyle = team.color;
+    ctx.fillRect(x, 0, w, canvas.height);
+
+    ctx.strokeStyle = team.secColor;
+    ctx.lineWidth = 8;
+    ctx.globalAlpha = 0.35;
+    for (let i = -canvas.height; i < w + canvas.height; i += 20) {
+        ctx.beginPath();
+        ctx.moveTo(x + i, 0);
+        ctx.lineTo(x + i - canvas.height, canvas.height);
+        ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+
+    ctx.fillStyle = "rgba(255,255,255,0.85)";
+    ctx.font = "bold 11px 'Bebas Neue'";
+    ctx.textAlign = "center";
+    ctx.save();
+    ctx.translate(x + w / 2, canvas.height / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText(team.name.substring(0, 12).toUpperCase(), 0, 4);
+    ctx.restore();
+    ctx.textAlign = "left";
+
+    ctx.restore();
+}
+
 function drawField() {
     ctx.fillStyle = state.isBenzGame ? "#1a3d1a" : "#2d7a2d";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    ctx.strokeStyle = "rgba(255,255,255,0.35)";
-    ctx.lineWidth = 1;
-    const yardSpacing = canvas.width / 12;
-    for(let i = 0; i <= 12; i++) {
-        let x = i * yardSpacing;
+    const stripeW = canvas.width / 12;
+    for (let i = 0; i < 12; i++) {
+        if (i % 2 === 0) {
+            ctx.fillStyle = "rgba(255,255,255,0.03)";
+            ctx.fillRect(i * stripeW, 0, stripeW, canvas.height);
+        }
+    }
+
+    const endZoneW = 50;
+    drawEndZone(0, endZoneW, state.userTeam);
+    drawEndZone(canvas.width - endZoneW, endZoneW, state.currentOpponent);
+
+    ctx.strokeStyle = "rgba(255,255,255,0.6)";
+    ctx.lineWidth = 3;
+    const yardSpacing = (canvas.width - endZoneW * 2) / 10;
+    for (let i = 0; i <= 10; i++) {
+        let x = Math.round(endZoneW + i * yardSpacing) + 0.5;
         ctx.beginPath();
         ctx.moveTo(x, 0);
         ctx.lineTo(x, canvas.height);
         ctx.stroke();
 
-        if (i > 0 && i < 12) {
-            ctx.fillStyle = "rgba(255,255,255,0.25)";
-            ctx.font = "bold 14px 'Bebas Neue'";
-            let yardNum = i <= 5 ? i * 10 : (12 - i) * 10;
-            ctx.fillText(yardNum, x - 8, canvas.height / 2 - 20);
-            ctx.fillText(yardNum, x - 8, canvas.height / 2 + 35);
+        if (i > 0 && i < 10) {
+            let yardNum = i <= 5 ? i * 10 : (10 - i) * 10;
+            ctx.fillStyle = "#fff";
+            ctx.font = "bold 15px 'Bebas Neue'";
+            ctx.textAlign = "center";
+            ctx.fillText(yardNum, x, canvas.height / 2 - 22);
+            ctx.save();
+            ctx.translate(x, canvas.height / 2 + 42);
+            ctx.rotate(Math.PI);
+            ctx.fillText(yardNum, 0, 0);
+            ctx.restore();
+            ctx.textAlign = "left";
         }
     }
 
-    ctx.strokeStyle = "rgba(255,255,255,0.15)";
-    for(let i = 0; i < canvas.width; i += 20) {
+    ctx.strokeStyle = "rgba(255,255,255,0.45)";
+    ctx.lineWidth = 2;
+    for (let x = endZoneW; x < canvas.width - endZoneW; x += yardSpacing / 10) {
         ctx.beginPath();
-        ctx.moveTo(i, canvas.height/2 - 60);
-        ctx.lineTo(i + 10, canvas.height/2 - 60);
+        ctx.moveTo(x, canvas.height / 2 - 55);
+        ctx.lineTo(x, canvas.height / 2 - 45);
         ctx.stroke();
         ctx.beginPath();
-        ctx.moveTo(i, canvas.height/2 + 60);
-        ctx.lineTo(i + 10, canvas.height/2 + 60);
+        ctx.moveTo(x, canvas.height / 2 + 45);
+        ctx.lineTo(x, canvas.height / 2 + 55);
         ctx.stroke();
     }
 
-    ctx.fillStyle = state.userTeam.color;
-    ctx.globalAlpha = 0.3;
-    ctx.fillRect(0, 0, 60, canvas.height);
-    ctx.fillStyle = state.currentOpponent.color;
-    ctx.fillRect(canvas.width - 60, 0, 60, canvas.height);
-    ctx.globalAlpha = 1;
-
-    ctx.fillStyle = "rgba(255,255,255,0.4)";
-    ctx.font = "bold 12px 'Bebas Neue'";
-    ctx.save();
-    ctx.translate(30, canvas.height/2);
-    ctx.rotate(-Math.PI/2);
-    ctx.fillText(state.userTeam.name.substring(0, 10).toUpperCase(), -40, 5);
-    ctx.restore();
-
-    ctx.save();
-    ctx.translate(canvas.width - 30, canvas.height/2);
-    ctx.rotate(Math.PI/2);
-    ctx.fillText(state.currentOpponent.name.substring(0, 10).toUpperCase(), -40, 5);
-    ctx.restore();
+    ctx.strokeStyle = "#fff";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(canvas.width / 2, 0);
+    ctx.lineTo(canvas.width / 2, canvas.height);
+    ctx.stroke();
 
     if (state.isBenzGame) {
         ctx.fillStyle = "rgba(241,196,15,0.08)";
@@ -1173,13 +1321,6 @@ function drawField() {
         ctx.fillText("ATLANTA, GEORGIA", canvas.width/2, canvas.height/2 + 25);
         ctx.textAlign = "left";
     }
-
-    ctx.strokeStyle = "rgba(255,255,255,0.5)";
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(canvas.width/2, 0);
-    ctx.lineTo(canvas.width/2, canvas.height);
-    ctx.stroke();
 }
 
 function updatePhysics() {
@@ -1288,34 +1429,14 @@ function updatePhysics() {
 }
 
 function drawEntities() {
+    const gaitFrame = Math.floor(Date.now() / 150) % 2 === 0;
+
     if (match.phase !== 'RUNNING') {
-        ctx.fillStyle = state.userTeam.color;
-        ctx.beginPath();
-        ctx.arc(match.qb.x, match.qb.y, 12, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = state.userTeam.secColor;
-        ctx.lineWidth = 2;
-        ctx.stroke();
-        ctx.fillStyle = "#fff";
-        ctx.font = "bold 10px 'Bebas Neue'";
-        ctx.textAlign = "center";
-        ctx.fillText("QB", match.qb.x, match.qb.y + 3);
-        ctx.textAlign = "left";
+        drawPlayerSprite(match.qb.x, match.qb.y, state.userTeam.color, state.userTeam.secColor, false, false, 2.4);
     }
 
     if (match.selectedPlay && match.selectedPlay.startsWith('PASS') && match.phase !== 'RUNNING') {
-        ctx.fillStyle = state.userTeam.secColor;
-        ctx.beginPath();
-        ctx.arc(match.wr.x, match.wr.y, 9, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = "#fff";
-        ctx.lineWidth = 1;
-        ctx.stroke();
-        ctx.fillStyle = "#000";
-        ctx.font = "bold 9px 'Bebas Neue'";
-        ctx.textAlign = "center";
-        ctx.fillText("WR", match.wr.x, match.wr.y + 3);
-        ctx.textAlign = "left";
+        drawPlayerSprite(match.wr.x, match.wr.y, state.userTeam.secColor, state.userTeam.color, true, gaitFrame, 2.1);
     }
 
     if (match.phase === 'RUNNING') {
@@ -1323,50 +1444,34 @@ function drawEntities() {
             ctx.strokeStyle = "#f1c40f";
             ctx.lineWidth = 2;
             ctx.beginPath();
-            ctx.arc(match.rb.x, match.rb.y, 17, 0, Math.PI * 2);
+            ctx.arc(match.rb.x, match.rb.y, 20, 0, Math.PI * 2);
             ctx.stroke();
         }
         if (match.jukeFlash > 0) {
             ctx.strokeStyle = "rgba(255,255,255," + (match.jukeFlash / 15) + ")";
             ctx.lineWidth = 3;
             ctx.beginPath();
-            ctx.arc(match.rb.x, match.rb.y, 24 - match.jukeFlash, 0, Math.PI * 2);
+            ctx.arc(match.rb.x, match.rb.y, 27 - match.jukeFlash, 0, Math.PI * 2);
             ctx.stroke();
         }
-        ctx.fillStyle = state.userTeam.color;
-        ctx.beginPath();
-        ctx.arc(match.rb.x, match.rb.y, 12, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = state.userTeam.secColor;
-        ctx.lineWidth = 3;
-        ctx.stroke();
-        ctx.fillStyle = "#fff";
-        ctx.font = "bold 10px 'Bebas Neue'";
-        ctx.textAlign = "center";
-        ctx.fillText("RB", match.rb.x, match.rb.y + 3);
-        ctx.textAlign = "left";
+        drawPlayerSprite(match.rb.x, match.rb.y, state.userTeam.color, state.userTeam.secColor, true, gaitFrame, 2.4);
     }
 
     if (match.ball.active) {
-        ctx.fillStyle = "#fff";
-        ctx.beginPath();
-        ctx.ellipse(match.ball.x, match.ball.y, 6, 4, match.aimAngle || 0, 0, Math.PI * 2);
-        ctx.fill();
+        drawFootball(match.ball.x, match.ball.y, match.aimAngle || 0);
     }
 
     match.defenders.forEach((d, i) => {
-        ctx.fillStyle = d.stunned > 0 ? "#7f8c8d" : state.currentOpponent.color;
-        ctx.beginPath();
-        ctx.arc(d.x, d.y, 11, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = "#000";
-        ctx.lineWidth = 2;
-        ctx.stroke();
-        ctx.fillStyle = "#fff";
-        ctx.font = "bold 9px 'Bebas Neue'";
-        ctx.textAlign = "center";
-        ctx.fillText(d.stunned > 0 ? "!" : "D" + (i+1), d.x, d.y + 3);
-        ctx.textAlign = "left";
+        const primary = d.stunned > 0 ? "#7f8c8d" : state.currentOpponent.color;
+        const secondary = d.stunned > 0 ? "#4a4a4a" : state.currentOpponent.secColor;
+        drawPlayerSprite(d.x, d.y, primary, secondary, true, Math.floor((Date.now() + i * 75) / 150) % 2 === 0, 2.2);
+        if (d.stunned > 0) {
+            ctx.fillStyle = "#fff";
+            ctx.font = "bold 12px 'Bebas Neue'";
+            ctx.textAlign = "center";
+            ctx.fillText("!", d.x, d.y - 20);
+            ctx.textAlign = "left";
+        }
     });
 
     if (match.phase === 'AIMING') {
