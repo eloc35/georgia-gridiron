@@ -2,8 +2,20 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Georgia Gridiron Dynasty - Complete GHSA Edition (2026-2028)</title>
+
+    <meta name="description" content="Complete GHSA Edition (2026-2028) high school football dynasty game.">
+    <meta name="theme-color" content="#0a0e14">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="GA Gridiron">
+
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="icons/favicon-32.png" sizes="32x32" type="image/png">
+    <link rel="icon" href="icons/favicon-16.png" sizes="16x16" type="image/png">
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto+Condensed:wght@400;700&display=swap');
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
@@ -1676,6 +1688,12 @@ function finishRecruiting() {
     generateSchedule();
     updateHub();
     document.getElementById("hub-panel").classList.remove("hidden");
+}
+
+if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+        navigator.serviceWorker.register("sw.js").catch(() => {});
+    });
 }
 </script>
 </body>
