@@ -1,4 +1,4 @@
-const CACHE_NAME = "georgia-gridiron-v1";
+const CACHE_NAME = "georgia-gridiron-v2";
 const ASSETS = [
     "./",
     "./index.html",
@@ -29,6 +29,23 @@ self.addEventListener("activate", event => {
 
 self.addEventListener("fetch", event => {
     if (event.request.method !== "GET") return;
+
+    // Navigations and the HTML file itself: always try the network first so
+    // updates show immediately. Only fall back to the cache when offline.
+    if (event.request.mode === "navigate" || event.request.url.endsWith("index.html")) {
+        event.respondWith(
+            fetch(event.request)
+                .then(response => {
+                    const clone = response.clone();
+                    caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+                    return response;
+                })
+                .catch(() => caches.match(event.request))
+        );
+        return;
+    }
+
+    // Everything else (icons, manifest): cache-first, refresh in background.
     event.respondWith(
         caches.match(event.request).then(cached => {
             const network = fetch(event.request)
