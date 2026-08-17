@@ -241,9 +241,9 @@ const CLASSIFICATIONS = {
 };
 
 const DIFFICULTY = {
-    normal:  { defSpeedMod: 1.00, defCount: 3, pointsPerWin: 8, pointsBonus: 15 },
-    hard:    { defSpeedMod: 1.25, defCount: 4, pointsPerWin: 6, pointsBonus: 12 },
-    extreme: { defSpeedMod: 1.50, defCount: 5, pointsPerWin: 5, pointsBonus: 10 }
+    normal:  { defSpeedMod: 1.00, defCount: 5, pointsPerWin: 8, pointsBonus: 15 },
+    hard:    { defSpeedMod: 1.15, defCount: 6, pointsPerWin: 6, pointsBonus: 12 },
+    extreme: { defSpeedMod: 1.30, defCount: 7, pointsPerWin: 5, pointsBonus: 10 }
 };
 
 let currentDifficulty = "normal";
@@ -931,11 +931,14 @@ let match = {
     qb: { x: 120, y: 0 },
     wr: { x: 120, y: -50 },
     rb: { x: 120, y: 0 },
+    wr2: { x: 0, y: 0, targetX: 0, targetY: 0, active: false },
+    oline: [], dline: [],
     defenders: [],
     aimAngle: 0, aimPower: 0,
     playYards: 0,
     turboMeter: 100, turboActive: false,
     jukeCooldown: 0, jukeFlash: 0,
+    snapDelay: 0, defenseRead: false,
     gameStats: { passes: 0, completions: 0, rushYards: 0, passYards: 0, tds: 0, turnovers: 0, oppRushYards: 0, oppPassYards: 0, oppTurnovers: 0 }
 };
 
@@ -985,9 +988,11 @@ function selectPlay(playType) {
     document.getElementById("play-panel").classList.add("hidden");
 
     const centerY = canvas.height / 2;
+    const isPass = playType.startsWith('PASS');
     match.qb = { x: 100, y: centerY };
     match.wr = { x: 100, y: centerY - 80 };
     match.rb = { x: 100, y: centerY + 40 };
+    match.wr2 = { x: 100, y: centerY + 90, targetX: 0, targetY: 0, active: isPass };
     match.ball = { x: 100, y: centerY, active: false };
     match.playYards = 0;
     match.turboMeter = 100;
@@ -995,20 +1000,39 @@ function selectPlay(playType) {
     match.jukeCooldown = 0;
     match.jukeFlash = 0;
 
+    // Tecmo Bowl's core mechanic: the defense secretly calls its own play.
+    // Guess the family right (run vs pass) and they collapse on you fast.
+    // Guess wrong and they're caught flat-footed, so real running room opens up.
+    const defenseCalledPass = Math.random() < 0.5;
+    match.defenseRead = (defenseCalledPass === isPass);
+    match.snapDelay = match.defenseRead ? 5 : 26;
+    const readMod = match.defenseRead ? 1.65 : 0.55;
+
     const diff = DIFFICULTY[currentDifficulty];
     const classDiff = CLASSIFICATIONS[state.currentClass].diffMultiplier;
-    const baseSpeed = (state.currentOpponent.rating / 25) * classDiff * diff.defSpeedMod;
+    const baseSpeed = (state.currentOpponent.rating / 25) * classDiff * diff.defSpeedMod * readMod;
 
     match.defenders = [];
     const defCount = diff.defCount;
     for (let i = 0; i < defCount; i++) {
         match.defenders.push({
-            x: 250 + Math.random() * 100,
-            y: centerY - 120 + (i * (240 / (defCount - 1 || 1))),
-            speed: baseSpeed + (Math.random() * 0.5),
+            x: 280 + Math.random() * 140,
+            y: centerY - 130 + (i * (260 / (defCount - 1 || 1))),
+            speed: baseSpeed + (Math.random() * 0.4),
             angle: 0,
             stunned: 0
         });
+    }
+
+    // Decorative offensive line (5) and defensive line (3) - not interactive,
+    // just fill out the formation the way a real 9-vs-9 snap looks.
+    match.oline = [];
+    for (let i = 0; i < 5; i++) {
+        match.oline.push({ x: match.qb.x + 20, y: centerY - 60 + i * 30 });
+    }
+    match.dline = [];
+    for (let i = 0; i < 3; i++) {
+        match.dline.push({ x: match.qb.x + 55, y: centerY - 35 + i * 35 });
     }
 
     if (playType === 'RUN_INSIDE' || playType === 'RUN_OUTSIDE') {
@@ -1021,9 +1045,13 @@ function selectPlay(playType) {
         if (playType === 'PASS_SHORT') {
             match.wr.targetX = 280;
             match.wr.targetY = centerY + (Math.random() - 0.5) * 60;
+            match.wr2.targetX = canvas.width - 80;
+            match.wr2.targetY = centerY + 100 + (Math.random() - 0.5) * 40;
         } else if (playType === 'PASS_DEEP') {
             match.wr.targetX = canvas.width - 60;
             match.wr.targetY = centerY + (Math.random() - 0.5) * 100;
+            match.wr2.targetX = 300;
+            match.wr2.targetY = centerY - 100 + (Math.random() - 0.5) * 40;
         } else {
             match.wr.targetX = 350 + Math.random() * 100;
             match.wr.targetY = centerY + (Math.random() - 0.5) * 80;
@@ -1359,12 +1387,20 @@ function drawField() {
 function updatePhysics() {
     match.time = Math.max(0, match.time - 0.025);
 
+    if (match.snapDelay > 0) match.snapDelay--;
+
     if (match.phase === 'AIMING' || match.phase === 'PASSING') {
         if (match.wr.targetX) {
             let dx = match.wr.targetX - match.wr.x;
             let dy = match.wr.targetY - match.wr.y;
             match.wr.x += dx * 0.03;
             match.wr.y += dy * 0.03;
+        }
+        if (match.wr2.active && match.wr2.targetX) {
+            let dx2 = match.wr2.targetX - match.wr2.x;
+            let dy2 = match.wr2.targetY - match.wr2.y;
+            match.wr2.x += dx2 * 0.025;
+            match.wr2.y += dy2 * 0.025;
         }
     }
 
@@ -1419,11 +1455,16 @@ function updatePhysics() {
     const target = (match.phase === 'RUNNING') ? match.rb :
                    (match.phase === 'PASSING') ? match.ball : match.wr;
 
+    // Pre-snap / pre-throw: the defense is still lined up, not pursuing yet.
+    // This is what gives a play any breathing room before the ball is live.
+    const defendersLive = match.phase !== 'AIMING' && match.snapDelay <= 0;
+
     match.defenders.forEach(d => {
         if (d.stunned > 0) {
             d.stunned--;
             return;
         }
+        if (!defendersLive) return;
 
         let dx = target.x - d.x;
         let dy = target.y - d.y;
@@ -1465,12 +1506,20 @@ function updatePhysics() {
 function drawEntities() {
     const gaitFrame = Math.floor(Date.now() / 150) % 2 === 0;
 
+    // Decorative formation dressing - fills out the field to a full-roster
+    // look (matching Tecmo's 9-vs-9 on-screen count) without being interactive.
+    match.oline.forEach(p => drawPlayerSprite(p.x, p.y, state.userTeam.color, state.userTeam.secColor, false, false, 1.7));
+    match.dline.forEach(p => drawPlayerSprite(p.x, p.y, state.currentOpponent.color, state.currentOpponent.secColor, false, false, 1.7));
+
     if (match.phase !== 'RUNNING') {
         drawPlayerSprite(match.qb.x, match.qb.y, state.userTeam.color, state.userTeam.secColor, false, false, 2.4);
     }
 
     if (match.selectedPlay && match.selectedPlay.startsWith('PASS') && match.phase !== 'RUNNING') {
         drawPlayerSprite(match.wr.x, match.wr.y, state.userTeam.secColor, state.userTeam.color, true, gaitFrame, 2.1);
+        if (match.wr2.active) {
+            drawPlayerSprite(match.wr2.x, match.wr2.y, state.userTeam.secColor, state.userTeam.color, true, !gaitFrame, 1.9);
+        }
     }
 
     if (match.phase === 'RUNNING') {
