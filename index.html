@@ -43,6 +43,17 @@
         .stat-card div { font-size: 11px; color: #7f8c8d; text-transform: uppercase; letter-spacing: 1px; }
         .stat-card span { font-size: 18px; font-weight: 700; color: #f39c12; font-family: 'Bebas Neue', sans-serif; letter-spacing: 1px; }
         #hud { position: absolute; top: 0; left: 0; width: 100%; padding: 10px 18px; background: rgba(0,0,0,0.85); display: flex; justify-content: space-between; font-size: 14px; font-weight: 700; z-index: 5; color: #f1c40f; border-bottom: 2px solid #f1c40f; font-family: 'Bebas Neue', sans-serif; letter-spacing: 1px; }
+        #touch-controls { position: absolute; bottom: 0; left: 0; width: 100%; height: 170px; display: flex; justify-content: space-between; align-items: flex-end; padding: 0 18px 18px; pointer-events: none; z-index: 20; }
+        .dpad { position: relative; width: 126px; height: 126px; pointer-events: auto; }
+        .dpad-btn { position: absolute; width: 42px; height: 42px; background: rgba(255,255,255,0.15); border: 2px solid rgba(255,255,255,0.5); border-radius: 8px; color: #fff; font-size: 18px; touch-action: none; -webkit-tap-highlight-color: transparent; }
+        .dpad-up { top: 0; left: 42px; }
+        .dpad-down { top: 84px; left: 42px; }
+        .dpad-left { top: 42px; left: 0; }
+        .dpad-right { top: 42px; left: 84px; }
+        .action-buttons { display: flex; flex-direction: column; gap: 12px; pointer-events: auto; }
+        .action-btn { width: 66px; height: 66px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.6); font-family: 'Bebas Neue', sans-serif; font-size: 12px; letter-spacing: 1px; touch-action: none; -webkit-tap-highlight-color: transparent; color: #fff; }
+        .turbo-btn { background: rgba(241,196,15,0.4); }
+        .juke-btn { background: rgba(231,76,60,0.4); }
         .play-picker { display: flex; gap: 12px; margin-top: 15px; flex-wrap: wrap; justify-content: center; }
         .play-btn { background: #2c3e50; border: 2px solid #34495e; color: white; padding: 14px 18px; border-radius: 8px; cursor: pointer; width: 130px; font-size: 13px; transition: all 0.2s; font-family: 'Roboto Condensed', sans-serif; }
         .play-btn:hover { border-color: #f1c40f; transform: translateY(-3px); box-shadow: 0 5px 15px rgba(241,196,15,0.2); }
@@ -227,6 +238,18 @@
         <button class="btn" onclick="finishGame()">CONTINUE</button>
     </div>
     <canvas id="gameCanvas"></canvas>
+    <div id="touch-controls" class="hidden">
+        <div class="dpad">
+            <button class="dpad-btn dpad-up" data-dir="up">▲</button>
+            <button class="dpad-btn dpad-left" data-dir="left">◀</button>
+            <button class="dpad-btn dpad-right" data-dir="right">▶</button>
+            <button class="dpad-btn dpad-down" data-dir="down">▼</button>
+        </div>
+        <div class="action-buttons">
+            <button id="turbo-btn" class="action-btn turbo-btn">TURBO</button>
+            <button id="juke-btn" class="action-btn juke-btn">JUKE</button>
+        </div>
+    </div>
 </div>
 <script>
 
@@ -943,10 +966,12 @@ let match = {
 };
 
 let keys = {};
+const GAME_KEYS = ['arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'w', 'a', 's', 'd', ' ', 'shift'];
 window.addEventListener('keydown', e => {
-    keys[e.key.toLowerCase()] = true;
+    const k = e.key.toLowerCase();
+    if (GAME_KEYS.includes(k)) e.preventDefault();
+    keys[k] = true;
     if (e.key === ' ') {
-        e.preventDefault();
         if (match.phase === 'PRESNAP') hikeBall();
         else if (match.phase === 'AIMING') throwToReceiver();
     }
@@ -956,9 +981,40 @@ window.addEventListener('keydown', e => {
 });
 window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
 
+// Touch controls - the keyboard scheme above has no equivalent on a phone,
+// so the on-screen D-pad and buttons drive the same state the physics loop reads.
+const touchMove = { up: false, down: false, left: false, right: false };
+let touchTurboHeld = false;
+
+document.querySelectorAll('.dpad-btn').forEach(btn => {
+    const dir = btn.dataset.dir;
+    const setDir = v => e => { e.preventDefault(); e.stopPropagation(); touchMove[dir] = v; };
+    btn.addEventListener('touchstart', setDir(true), { passive: false });
+    btn.addEventListener('touchend', setDir(false), { passive: false });
+    btn.addEventListener('touchcancel', setDir(false), { passive: false });
+    btn.addEventListener('mousedown', setDir(true));
+    btn.addEventListener('mouseup', setDir(false));
+    btn.addEventListener('mouseleave', setDir(false));
+});
+
+const turboBtn = document.getElementById('turbo-btn');
+const setTurbo = v => e => { e.preventDefault(); e.stopPropagation(); touchTurboHeld = v; };
+turboBtn.addEventListener('touchstart', setTurbo(true), { passive: false });
+turboBtn.addEventListener('touchend', setTurbo(false), { passive: false });
+turboBtn.addEventListener('touchcancel', setTurbo(false), { passive: false });
+turboBtn.addEventListener('mousedown', setTurbo(true));
+turboBtn.addEventListener('mouseup', setTurbo(false));
+turboBtn.addEventListener('mouseleave', setTurbo(false));
+
+const jukeBtn = document.getElementById('juke-btn');
+const doJuke = e => { e.preventDefault(); e.stopPropagation(); if (match.phase === 'RUNNING') attemptJuke(); };
+jukeBtn.addEventListener('touchstart', doJuke, { passive: false });
+jukeBtn.addEventListener('click', doJuke);
+
 function startMatch() {
     hideAllPanels();
     document.getElementById("hud").classList.remove("hidden");
+    document.getElementById("touch-controls").classList.remove("hidden");
 
     document.getElementById("hud-venue").innerText = state.isBenzGame ? "MERCEDES-BENZ STADIUM" : "HOME FIELD";
     document.getElementById("hud-venue").style.color = state.isBenzGame ? "#f1c40f" : "#2ecc71";
@@ -1154,6 +1210,7 @@ function showToast(msg, color) {
     }, 1500);
 }
 
+const LIVE_PHASES = ['PRESNAP', 'RUNNING', 'AIMING', 'PASSING'];
 function gameLoop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawField();
@@ -1164,6 +1221,8 @@ function gameLoop() {
         updatePhysics();
         drawEntities();
     }
+
+    document.getElementById("touch-controls").classList.toggle("hidden", !LIVE_PHASES.includes(match.phase));
 
     if (match.time > 0 && match.phase !== 'END') {
         requestAnimationFrame(gameLoop);
@@ -1439,7 +1498,7 @@ function updatePhysics() {
 
     if (match.phase === 'RUNNING') {
         const baseSpeed = 3.2;
-        match.turboActive = keys[' '] && match.turboMeter > 0;
+        match.turboActive = (keys[' '] || touchTurboHeld) && match.turboMeter > 0;
 
         if (match.turboActive) {
             match.turboMeter = Math.max(0, match.turboMeter - 1.8);
@@ -1452,10 +1511,10 @@ function updatePhysics() {
         if (match.jukeCooldown > 0) match.jukeCooldown--;
         if (match.jukeFlash > 0) match.jukeFlash--;
 
-        if (keys['arrowup'] || keys['w']) { match.rb.y -= speed; }
-        if (keys['arrowdown'] || keys['s']) { match.rb.y += speed; }
-        if (keys['arrowleft'] || keys['a']) { match.rb.x -= speed; }
-        if (keys['arrowright'] || keys['d']) { match.rb.x += speed; }
+        if (keys['arrowup'] || keys['w'] || touchMove.up) { match.rb.y -= speed; }
+        if (keys['arrowdown'] || keys['s'] || touchMove.down) { match.rb.y += speed; }
+        if (keys['arrowleft'] || keys['a'] || touchMove.left) { match.rb.x -= speed; }
+        if (keys['arrowright'] || keys['d'] || touchMove.right) { match.rb.x += speed; }
 
         match.ball.x = match.rb.x;
         match.ball.y = match.rb.y;
@@ -1515,16 +1574,39 @@ function updatePhysics() {
     }
 }
 
+function drawControlIndicator(x, y) {
+    const bounce = Math.sin(Date.now() / 180) * 3;
+    const ty = y - 32 + bounce;
+    ctx.fillStyle = '#f1c40f';
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x, ty + 9);
+    ctx.lineTo(x - 6, ty);
+    ctx.lineTo(x + 6, ty);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+}
+
 function drawEntities() {
     const gaitFrame = Math.floor(Date.now() / 150) % 2 === 0;
 
     // Decorative formation dressing - fills out the field to a full-roster
     // look (matching Tecmo's 9-vs-9 on-screen count) without being interactive.
+    // Dimmed so they read as background scenery, not something you control.
+    ctx.globalAlpha = 0.5;
     match.oline.forEach(p => drawPlayerSprite(p.x, p.y, state.userTeam.color, state.userTeam.secColor, false, false, 1.7));
     match.dline.forEach(p => drawPlayerSprite(p.x, p.y, state.currentOpponent.color, state.currentOpponent.secColor, false, false, 1.7));
+    ctx.globalAlpha = 1;
+
+    const isRunPlay = match.selectedPlay && match.selectedPlay.startsWith('RUN');
 
     if (match.phase !== 'RUNNING') {
         drawPlayerSprite(match.qb.x, match.qb.y, state.userTeam.color, state.userTeam.secColor, false, false, 2.4);
+        if (match.phase === 'AIMING' || (match.phase === 'PRESNAP' && !isRunPlay)) {
+            drawControlIndicator(match.qb.x, match.qb.y);
+        }
     }
 
     if (match.selectedPlay && match.selectedPlay.startsWith('PASS') && match.phase !== 'RUNNING') {
@@ -1550,6 +1632,9 @@ function drawEntities() {
             ctx.stroke();
         }
         drawPlayerSprite(match.rb.x, match.rb.y, state.userTeam.color, state.userTeam.secColor, match.phase === 'RUNNING', gaitFrame, 2.4);
+        if (match.phase === 'RUNNING' || (match.phase === 'PRESNAP' && isRunPlay)) {
+            drawControlIndicator(match.rb.x, match.rb.y);
+        }
     }
 
     if (match.ball.active) {
@@ -1757,6 +1842,7 @@ function renderBoxScore() {
 function finishMatchSimulation() {
     match.phase = 'END';
     document.getElementById("hud").classList.add("hidden");
+    document.getElementById("touch-controls").classList.add("hidden");
     document.getElementById("recap-panel").classList.remove("hidden");
 
     while (match.oppScore < match.userScore - 14) {
