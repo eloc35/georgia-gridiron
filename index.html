@@ -938,7 +938,7 @@ let match = {
     playYards: 0,
     turboMeter: 100, turboActive: false,
     jukeCooldown: 0, jukeFlash: 0,
-    snapDelay: 0, defenseRead: false,
+    snapDelay: 0, defenseRead: false, tackleImmunity: 0,
     gameStats: { passes: 0, completions: 0, rushYards: 0, passYards: 0, tds: 0, turnovers: 0, oppRushYards: 0, oppPassYards: 0, oppTurnovers: 0 }
 };
 
@@ -1003,24 +1003,25 @@ function selectPlay(playType) {
     match.jukeFlash = 0;
 
     // Tecmo Bowl's core mechanic: the defense secretly calls its own play.
-    // Guess the family right (run vs pass) and they collapse on you fast.
-    // Guess wrong and they're caught flat-footed, so real running room opens up.
+    // Guess the family right (run vs pass) and they get a real edge.
+    // Guess wrong and they're caught flat-footed, so running room opens up.
     const defenseCalledPass = Math.random() < 0.5;
     match.defenseRead = (defenseCalledPass === isPass);
-    match.snapDelay = match.defenseRead ? 5 : 26;
-    const readMod = match.defenseRead ? 1.65 : 0.55;
+    match.snapDelay = match.defenseRead ? 15 : 40;
+    match.tackleImmunity = 40;
+    const readMod = match.defenseRead ? 1.15 : 0.5;
 
     const diff = DIFFICULTY[currentDifficulty];
     const classDiff = CLASSIFICATIONS[state.currentClass].diffMultiplier;
-    const baseSpeed = (state.currentOpponent.rating / 25) * classDiff * diff.defSpeedMod * readMod;
+    const baseSpeed = (state.currentOpponent.rating / 32) * classDiff * diff.defSpeedMod * readMod;
 
     match.defenders = [];
     const defCount = diff.defCount;
     for (let i = 0; i < defCount; i++) {
         match.defenders.push({
-            x: 280 + Math.random() * 140,
+            x: 320 + Math.random() * 160,
             y: centerY - h * 0.34 + (i * ((h * 0.68) / (defCount - 1 || 1))),
-            speed: baseSpeed + (Math.random() * 0.4),
+            speed: baseSpeed + (Math.random() * 0.3),
             angle: 0,
             stunned: 0
         });
@@ -1398,6 +1399,7 @@ function updatePhysics() {
     match.time = Math.max(0, match.time - 0.025);
 
     if (match.snapDelay > 0) match.snapDelay--;
+    if ((match.phase === 'RUNNING' || match.phase === 'PASSING') && match.tackleImmunity > 0) match.tackleImmunity--;
 
     if (match.phase === 'AIMING' || match.phase === 'PASSING') {
         if (match.wr.targetX) {
@@ -1485,12 +1487,12 @@ function updatePhysics() {
             d.y += (dy / dist) * d.speed;
         }
 
-        if (dist < 18 && match.phase === 'RUNNING') {
+        if (dist < 15 && match.phase === 'RUNNING' && match.tackleImmunity <= 0) {
             let yards = Math.max(0, Math.floor((match.rb.x - 100) / 5));
             endPlay(false, yards);
         }
 
-        if (match.phase === 'PASSING' && dist < 15) {
+        if (match.phase === 'PASSING' && match.tackleImmunity <= 0 && dist < 15) {
             let bdx = match.ball.x - d.x;
             let bdy = match.ball.y - d.y;
             if (Math.hypot(bdx, bdy) < 20) {
