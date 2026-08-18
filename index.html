@@ -1486,7 +1486,7 @@ function updatePhysics() {
             match.ball.x = match.rb.x;
             match.ball.y = match.rb.y;
             match.gameStats.completions++;
-            match.gameStats.passYards += Math.floor((match.rb.x - 100) / 5);
+            match.tackleImmunity = 25;
             showToast("CAUGHT!");
         }
 
@@ -1554,23 +1554,17 @@ function updatePhysics() {
         if (match.phase === 'PASSING' && match.tackleImmunity <= 0 && dist < 15) {
             let bdx = match.ball.x - d.x;
             let bdy = match.ball.y - d.y;
-            if (Math.hypot(bdx, bdy) < 20) {
+            if (Math.hypot(bdx, bdy) < 20 && match.phase === 'PASSING') {
+                match.phase = 'PREPLAY';
                 showToast("INTERCEPTED!", "#e74c3c");
                 match.gameStats.turnovers++;
-                setTimeout(() => {
-                    match.oppScore += 7;
-                    endPlay(false, 0);
-                }, 800);
+                setTimeout(() => simulateOpponentDrive(), 900);
             }
         }
     });
 
     if (match.rb && match.rb.x > canvas.width - 50 && match.phase === 'RUNNING') {
         endPlay(true, 100 - match.yardLine);
-    }
-
-    if (match.time <= 0) {
-        finishMatchSimulation();
     }
 }
 
@@ -1689,54 +1683,119 @@ function drawEntities() {
     }
 }
 
+function proceedToNextPlay(delay, resetTo) {
+    setTimeout(() => {
+        if (resetTo) { match.down = 1; match.toGo = 10; match.yardLine = resetTo.yardLine; }
+        if (match.time > 0) { setupPlay(); return; }
+        if (match.quarter < 4) {
+            match.quarter++;
+            match.time = 180;
+            showToast("END OF QUARTER", "#f1c40f");
+            setTimeout(() => setupPlay(), 600);
+        } else {
+            finishMatchSimulation();
+        }
+    }, delay);
+}
+
+// The opponent never appears on screen - after each of your drives ends,
+// their possession is resolved as one quick roll weighted by team strength,
+// rather than a coin flip, so the final score actually reflects the matchup.
+function simulateOpponentDrive() {
+    match.phase = 'PREPLAY';
+
+    const diff = DIFFICULTY[currentDifficulty];
+    const classDiff = CLASSIFICATIONS[state.currentClass].diffMultiplier;
+    const strength = Math.max(0.4, (state.currentOpponent.rating / Math.max(1, state.userTeam.rating)) * classDiff * diff.defSpeedMod);
+
+    match.time = Math.max(0, match.time - (20 + Math.random() * 35));
+    updateHUD();
+
+    const driveYards = Math.max(0, Math.floor(15 + Math.random() * 45 * strength));
+    const rushShare = 0.35 + Math.random() * 0.3;
+    match.gameStats.oppRushYards += Math.floor(driveYards * rushShare);
+    match.gameStats.oppPassYards += Math.ceil(driveYards * (1 - rushShare));
+
+    const turnoverChance = Math.max(0.08, Math.min(0.35, 0.22 / strength));
+    const scoreChance = Math.max(0.05, Math.min(0.6, 0.16 * strength));
+    const fgChance = Math.max(0.05, Math.min(0.25, 0.10 * strength));
+
+    const roll = Math.random();
+    let msg, color, nextSpot;
+
+    if (roll < turnoverChance) {
+        msg = "OPPONENT TURNOVER - BALL'S YOURS!"; color = "#2ecc71";
+        match.gameStats.oppTurnovers++;
+        nextSpot = 25 + Math.floor(Math.random() * 25);
+    } else if (roll < turnoverChance + scoreChance) {
+        match.oppScore += 7;
+        msg = state.currentOpponent.name.toUpperCase() + " SCORES A TOUCHDOWN"; color = "#e74c3c";
+        nextSpot = 20;
+    } else if (roll < turnoverChance + scoreChance + fgChance) {
+        match.oppScore += 3;
+        msg = state.currentOpponent.name.toUpperCase() + " KICKS A FIELD GOAL"; color = "#e74c3c";
+        nextSpot = 20;
+    } else {
+        msg = "OPPONENT PUNTS"; color = "#bdc3c7";
+        nextSpot = 20 + Math.floor(Math.random() * 20);
+    }
+
+    showToast(msg, color);
+    proceedToNextPlay(1500, { yardLine: nextSpot });
+}
+
 function endPlay(isTouchdown, yardsGained) {
     match.phase = 'PREPLAY';
 
-    if(isTouchdown) {
+    if (!isTouchdown) {
+        yardsGained = Math.max(0, Math.min(yardsGained, 100 - match.yardLine));
+        if (match.yardLine + yardsGained >= 100) isTouchdown = true;
+    }
+
+    if (isTouchdown) {
         match.userScore += 7;
         match.gameStats.tds++;
         state.totalTouchdowns++;
+        state.totalYards += yardsGained;
+        if (match.selectedPlay && yardsGained) {
+            if (match.selectedPlay.startsWith('RUN')) match.gameStats.rushYards += yardsGained;
+            else if (match.selectedPlay.startsWith('PASS')) match.gameStats.passYards += yardsGained;
+        }
         showToast("TOUCHDOWN!", "#f1c40f");
-        match.yardLine = 20; match.down = 1; match.toGo = 10;
-        setTimeout(() => {
-            if (match.time > 0) setupPlay();
-        }, 1200);
+        proceedToNextPlay(1200, { yardLine: 20 });
         return;
     }
 
-    yardsGained = Math.max(0, yardsGained);
     match.yardLine += yardsGained;
     match.toGo -= yardsGained;
     state.totalYards += yardsGained;
 
     if (match.selectedPlay && match.selectedPlay.startsWith('RUN')) {
         match.gameStats.rushYards += yardsGained;
+    } else if (match.selectedPlay && match.selectedPlay.startsWith('PASS')) {
+        match.gameStats.passYards += yardsGained;
     }
 
-    if(match.toGo <= 0) {
+    if (match.toGo <= 0) {
         match.down = 1; match.toGo = 10;
-    } else {
-        match.down++;
-        if(match.down > 4) {
-            if (match.yardLine >= 60 && match.yardLine <= 85) {
-                showFourthDownPanel();
-                return;
-            } else if (match.yardLine < 50) {
-                match.down = 1; match.toGo = 10; match.yardLine = 20;
-                showToast("PUNT!", "#bdc3c7");
-                if(Math.random() > 0.5) match.oppScore += 7;
-            } else {
-                showFourthDownPanel();
-                return;
-            }
-        }
+        proceedToNextPlay(400);
+        return;
     }
 
-    if(match.time <= 0) {
-        finishMatchSimulation();
-    } else {
-        setTimeout(() => setupPlay(), 400);
+    match.down++;
+
+    if (match.down === 4) {
+        showFourthDownPanel();
+        return;
     }
+
+    if (match.down > 4) {
+        showToast("TURNOVER ON DOWNS", "#e74c3c");
+        setTimeout(() => simulateOpponentDrive(), 700);
+        return;
+    }
+
+    proceedToNextPlay(400);
 }
 
 function showFourthDownPanel() {
@@ -1753,14 +1812,11 @@ function fourthDownDecision(decision) {
     document.getElementById("fourthdown-panel").classList.add("hidden");
 
     if (decision === 'punt') {
-        match.down = 1; match.toGo = 10; match.yardLine = 20;
         showToast("PUNT!", "#bdc3c7");
-        if(Math.random() > 0.5) match.oppScore += 7;
-        setTimeout(() => setupPlay(), 600);
+        setTimeout(() => simulateOpponentDrive(), 700);
     } else if (decision === 'fg') {
         showFieldGoalPanel();
     } else {
-        match.down = 4;
         setupPlay();
     }
 }
@@ -1772,6 +1828,16 @@ let fgAnimId = null;
 
 function showFieldGoalPanel() {
     document.getElementById("fg-panel").classList.remove("hidden");
+
+    // Kicks from further out get a tighter make window, like Retro Bowl's meter.
+    const kickDistance = (100 - match.yardLine) + 17;
+    const windowWidth = Math.max(8, Math.min(30, 34 - kickDistance * 0.22));
+    match.fgTargetLeft = 50 - windowWidth / 2;
+    match.fgTargetRight = 50 + windowWidth / 2;
+    const targetEl = document.getElementById('fg-target');
+    targetEl.style.left = match.fgTargetLeft + '%';
+    targetEl.style.width = windowWidth + '%';
+
     fgCursorPos = 0;
     fgCursorDir = 1;
     fgAnimating = true;
@@ -1792,18 +1858,16 @@ function attemptFieldGoal() {
     if (fgAnimId) cancelAnimationFrame(fgAnimId);
     document.getElementById("fg-panel").classList.add("hidden");
 
-    let targetLeft = 35;
-    let targetRight = 65;
+    const made = fgCursorPos >= match.fgTargetLeft && fgCursorPos <= match.fgTargetRight;
 
-    if (fgCursorPos >= targetLeft && fgCursorPos <= targetRight) {
+    if (made) {
         match.userScore += 3;
         showToast("FIELD GOAL!", "#f1c40f");
     } else {
         showToast("MISSED!", "#e74c3c");
     }
 
-    match.down = 1; match.toGo = 10; match.yardLine = 20;
-    setTimeout(() => setupPlay(), 800);
+    setTimeout(() => simulateOpponentDrive(), 800);
 }
 
 function renderBoxScore() {
@@ -1845,16 +1909,6 @@ function finishMatchSimulation() {
     document.getElementById("touch-controls").classList.add("hidden");
     document.getElementById("recap-panel").classList.remove("hidden");
 
-    while (match.oppScore < match.userScore - 14) {
-        match.oppScore += 7;
-    }
-    while (match.userScore < match.oppScore - 14) {
-        match.userScore += 7;
-    }
-
-    if (Math.random() > 0.5 && match.oppScore === 0) match.oppScore += 7;
-    if (Math.random() > 0.7 && match.userScore === 0) match.userScore += 7;
-
     const userWon = match.userScore > match.oppScore;
     document.getElementById("recap-score").innerText =
         state.userTeam.name + " " + match.userScore + " - " + match.oppScore + " " + state.currentOpponent.name;
@@ -1865,11 +1919,6 @@ function finishMatchSimulation() {
         " | TDs: " + match.gameStats.tds;
     document.getElementById("recap-stats").innerText = statsHtml;
 
-    const oppTotalYards = 130 + match.oppScore * 17 + Math.floor(Math.random() * 70);
-    const oppRushShare = 0.35 + Math.random() * 0.3;
-    match.gameStats.oppRushYards = Math.floor(oppTotalYards * oppRushShare);
-    match.gameStats.oppPassYards = oppTotalYards - match.gameStats.oppRushYards;
-    match.gameStats.oppTurnovers = Math.random() > 0.6 ? (Math.random() > 0.8 ? 2 : 1) : 0;
     renderBoxScore();
 
     if(userWon) {
